@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG to URL</title>
+  <link rel="stylesheet" type="text/css" href="./index.css">
+</head>
+<body>
+  <section class="container">
+    <header>
+      <h1>SVG to URL</h1>
+    </header>
+    <main>
+      <section class="fileupload">
+        <span>上传文件</span>
+        <input id="fileupload" type="file" accept="image/svg" />
+      </section>
+      <section class="separate">
+        <span>or</span>
+      </section>
+      <section class="textarea">
+        <textarea id="textarea" placeholder="SVG文件内容"></textarea>
+      </section>
+      <section class="action">
+        <button id="convert" disabled type="button">SVG转换URL</button>
+      </section>
+      <section class="result">
+        <textarea readonly id="result"></textarea>
+      </section>
+    </main>
+  </section>
+  <script type="text/javascript" src="./compiler.js"></script>
+  <script type="text/javascript">
+    window.onload = function() {
+      var uploader = document.getElementById('fileupload')
+      var textarea = document.getElementById('textarea')
+      var convert = document.getElementById('convert')
+      var result = document.getElementById('result')
+
+      function resultToggle (display) {
+        result.parentElement.style.display = display
+      }
+
+      function convertDisabled (disabled) {
+        convert.disabled = disabled
+      }
+
+      textarea.addEventListener('focus', function (event) {
+        textarea.parentElement.classList.add('focus')
+      })
+
+      textarea.addEventListener('blur', function () {
+        textarea.parentElement.classList.remove('focus')
+      })
+
+      textarea.addEventListener('input', function (event) {
+        if (event.target.value) {
+          convertDisabled(false)
+        } else {
+          resultToggle('none')
+          convertDisabled(true)
+        }
+      })
+
+      uploader.addEventListener('change', async function (event) {
+        var file = event.target.files[0]
+
+        if (file.type.startsWith('image/svg+xml')) {
+          var fileText = await file.text()
+          textarea.value = fileText
+          textarea.focus()
+          convertDisabled(false)
+        } else {
+          convertDisabled(true)
+          alert('请上传SVG文件')
+        }
+      })
+
+      convert.addEventListener('click', function (event) {
+        if (textarea.value) {
+          result.value = SVGToBase64XML(textarea.value)
+          resultToggle('block')
+        } else {
+          resultToggle('none')
+        }
+      })
+    }
+  </script>
+</body>
+</html>
