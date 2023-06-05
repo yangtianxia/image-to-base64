@@ -5,12 +5,14 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SVG to URL</title>
+  <meta name="description" content="svg image to the base64/svg+xml format">
   <link rel="stylesheet" type="text/css" href="./index.css">
 </head>
 <body>
   <section class="container">
     <header>
       <h1>SVG to URL</h1>
+      <a target="_blank" rel="noreferrer" href="https://github.com/yangtianxia/svg-to-url">github</a>
     </header>
     <main>
       <section class="fileupload">
@@ -25,6 +27,10 @@
       </section>
       <section class="action">
         <button id="convert" disabled type="button">SVG转换URL</button>
+        <label class="checkbox">
+          <input id="checkbox" type="checkbox" />
+          <span class="checkbox-label">双引号模式</span>
+        </label>
       </section>
       <section class="result">
         <textarea readonly id="result"></textarea>
@@ -37,6 +43,7 @@
       var uploader = document.getElementById('fileupload')
       var textarea = document.getElementById('textarea')
       var convert = document.getElementById('convert')
+      var checkbox = document.getElementById('checkbox')
       var result = document.getElementById('result')
 
       function resultToggle (display) {
@@ -80,7 +87,9 @@
 
       convert.addEventListener('click', function (event) {
         if (textarea.value) {
-          result.value = SVGToBase64XML(textarea.value)
+          result.value = SVGToBase64XML(textarea.value, {
+            doubleQuote: checkbox.checked
+          })
           resultToggle('block')
         } else {
           resultToggle('none')
