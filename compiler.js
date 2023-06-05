@@ -9,17 +9,33 @@
     root.SVGToBase64XML = factory()
   }
 })(this, function() {
+  var prefix = 'data:image/svg+xml,'
   var space = '%20'
   var quotes = '%22'
   var equal = '%3D'
 
-  return function (template) {
+  return function (template, option) {
+    if (typeof option === 'undefined') {
+      option = {
+        doubleQuote: false
+      }
+    }
+
+    if (template.indexOf(prefix) === 0) {
+      template = template.replace(new RegExp(prefix.replace(/\+/, '\\+')), '')
+      template = template.replace(/'/g, '"')
+      return decodeURIComponent(template)
+    }
+
     var data = encodeURIComponent(template)
 
-    data = data.split(space).join(' ')
-    data = data.split(quotes).join("'")
-    data = data.split(equal).join('=')
+    // 处理空格
+    data = data.replace(new RegExp(space, 'g'), ' ')
+    // 处理引号
+    data = data.replace(new RegExp(quotes, 'g'), option.doubleQuote ? '"' : "'")
+    // 处理等号
+    data = data.replace(new RegExp(equal, 'g'), '=')
 
-    return 'data:image/svg+xml,' + data
+    return prefix + data
   }
 })
