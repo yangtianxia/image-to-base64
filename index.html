@@ -39,7 +39,7 @@
   </section>
   <script type="text/javascript" src="./compiler.js"></script>
   <script type="text/javascript">
-    window.onload = function() {
+    window.onload = function () {
       var uploader = document.getElementById('fileupload')
       var textarea = document.getElementById('textarea')
       var convert = document.getElementById('convert')
@@ -52,6 +52,18 @@
 
       function convertDisabled (disabled) {
         convert.disabled = disabled
+      }
+
+      async function transferFile (file) {
+        if (file.type.startsWith('image/svg+xml')) {
+          var fileText = await file.text()
+          textarea.value = fileText
+          textarea.focus()
+          convertDisabled(false)
+        } else {
+          convertDisabled(true)
+          alert('请上传SVG文件')
+        }
       }
 
       textarea.addEventListener('focus', function (event) {
@@ -71,18 +83,9 @@
         }
       })
 
-      uploader.addEventListener('change', async function (event) {
+      uploader.addEventListener('change', function (event) {
         var file = event.target.files[0]
-
-        if (file.type.startsWith('image/svg+xml')) {
-          var fileText = await file.text()
-          textarea.value = fileText
-          textarea.focus()
-          convertDisabled(false)
-        } else {
-          convertDisabled(true)
-          alert('请上传SVG文件')
-        }
+        transferFile(file)
       })
 
       convert.addEventListener('click', function (event) {
@@ -95,6 +98,19 @@
           resultToggle('none')
         }
       })
+
+      document.addEventListener('drop', function (event) {
+        var file = event.dataTransfer.files[0]
+        transferFile(file)
+      })
+
+      document.ondrop = function (event) {
+        event.preventDefault()
+      }
+
+      document.ondragover = function (event) {
+        event.preventDefault()
+      }
     }
   </script>
 </body>
