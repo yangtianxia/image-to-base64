@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SVG to URL</title>
+  <title>IMAGE to URL</title>
   <meta name="description" content="svg image to the base64/svg+xml format">
   <link rel="stylesheet" type="text/css" href="./index.css">
 </head>
 <body>
   <section class="container">
     <header>
-      <h1>SVG to URL</h1>
+      <h1>IMAGE to URL</h1>
       <a target="_blank" rel="noreferrer" href="https://github.com/yangtianxia/svg-to-url">github</a>
     </header>
     <main>
@@ -23,46 +23,91 @@
         <span>or</span>
       </section>
       <section class="textarea">
-        <textarea id="textarea" placeholder="SVG文件内容"></textarea>
+        <textarea id="textarea" placeholder="仅粘贴SVG文件内容"></textarea>
       </section>
       <section class="action">
-        <button id="convert" disabled type="button">SVG转换URL</button>
+        <button id="convert" disabled type="button">convert</button>
         <label class="checkbox">
           <input id="checkbox" type="checkbox" />
           <span class="checkbox-label">双引号模式</span>
         </label>
       </section>
-      <section class="result">
-        <textarea readonly id="result"></textarea>
+      <section id="result" class="result">
+        <div class="result-wrapper">
+          <div class="result-textarea">
+            <textarea readonly id="result-textarea"></textarea>
+          </div>
+          <div class="result-thumb">
+            <img id="result-img" />
+          </div>
+        </div>
       </section>
     </main>
   </section>
   <script type="text/javascript" src="./compiler.js"></script>
   <script type="text/javascript">
     window.onload = function () {
+      var supportType = ['image/svg+xml', 'image/png', 'image/jpeg']
       var uploader = document.getElementById('fileupload')
       var textarea = document.getElementById('textarea')
       var convert = document.getElementById('convert')
       var checkbox = document.getElementById('checkbox')
       var result = document.getElementById('result')
+      var resultImg = document.getElementById('result-img')
+      var resultTextarea = document.getElementById('result-textarea')
 
       function resultToggle (display) {
-        result.parentElement.style.display = display
+        result.style.display = display
       }
 
       function convertDisabled (disabled) {
         convert.disabled = disabled
       }
 
+      function clearUploader () {
+        uploader.value = ''
+      }
+
+      function svgToBase64 () {
+        var base64 = SVGToBase64XML(textarea.value, {
+          doubleQuote: checkbox.checked
+        })
+        resultTextarea.value = base64
+        resultImg.src = base64
+        resultToggle('block')
+      }
+
+      function imageToBase64 () {
+        var file = uploader.files[0]
+        var reader = new FileReader()
+        reader.readAsDataURL(file)
+        reader.onload = function () {
+          var base64 = reader.result
+          resultTextarea.value = base64
+          resultImg.src = base64
+          resultToggle('block')
+        }
+        reader.onerror = function () {
+          alert('操作失败')
+        }
+      }
+
       async function transferFile (file) {
-        if (file.type.startsWith('image/svg+xml')) {
-          var fileText = await file.text()
-          textarea.value = fileText
-          textarea.focus()
+        if (supportType.indexOf(file.type) !== -1) {
+          if (file.type === 'image/svg+xml') {
+            var fileText = await file.text()
+            textarea.value = fileText
+            textarea.focus()
+            svgToBase64()
+            clearUploader()
+          } else {
+            imageToBase64()
+          }
           convertDisabled(false)
         } else {
-          convertDisabled(true)
-          alert('请上传SVG文件')
+          clearUploader()
+          convertDisabled(textarea.value === '')
+          alert('不支持的文件格式')
         }
       }
 
@@ -90,11 +135,8 @@
 
       convert.addEventListener('click', function (event) {
         if (textarea.value) {
-          result.value = SVGToBase64XML(textarea.value, {
-            doubleQuote: checkbox.checked
-          })
-          resultToggle('block')
-        } else {
+          svgToBase64()
+        } else if (uploader.files.length === 0) {
           resultToggle('none')
         }
       })
