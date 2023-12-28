@@ -1,3 +1,3 @@
-# svg-to-base64-xml
+# image-to-base64
 
-将svg图片转换成base64图片格式，支持css `background-image`、`mask-image` 图片格式，方便在css内使用svg矢量图片。
+将图片转换成base64图片格式，支持css `background-image`、`mask-image` 图片格式，方便在css内使用base64格式图片。

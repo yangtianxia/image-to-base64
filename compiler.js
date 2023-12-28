@@ -1,12 +1,12 @@
 (function(root, factory) {
-  if (typeof exports === "object" && typeof module === "object") {
+  if (typeof exports === 'object' && typeof module === 'object') {
     module.exports = factory(require)
-  } else if (typeof define === "function" && define.md) {
+  } else if (typeof define === 'function' && define.md) {
     define(factory())
-  } else if (typeof exports === "object") {
-    exports["SVGToBase64XML"] = factory()
+  } else if (typeof exports === 'object') {
+    exports['ImageToBase64'] = factory()
   } else {
-    root.SVGToBase64XML = factory()
+    root.ImageToBase64 = factory()
   }
 })(this, function() {
   var prefix = 'data:image/svg+xml,'

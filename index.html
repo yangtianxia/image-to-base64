@@ -4,15 +4,18 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IMAGE to URL</title>
-  <meta name="description" content="svg image to the base64/svg+xml format">
+  <title>Image To Base64</title>
+  <meta name="description" content="image to the base64 format.">
+  <meta name="keywords" content="image转base64,image-to-base64,base64">
   <link rel="stylesheet" type="text/css" href="./index.css">
 </head>
 <body>
   <section class="container">
     <header>
-      <h1>IMAGE to URL</h1>
-      <a target="_blank" rel="noreferrer" href="https://github.com/yangtianxia/svg-to-url">github</a>
+      <h1>Image To Base64</h1>
+      <a target="_blank" rel="noreferrer" href="https://github.com/yangtianxia/image-to-base64">
+        <img src="https://img.shields.io/github/stars/yangtianxia/image-to-base64?style=social" alt="image-to-base64" />
+      </a>
     </header>
     <main>
       <section class="fileupload">
@@ -47,7 +50,7 @@
   <script type="text/javascript" src="./compiler.js"></script>
   <script type="text/javascript">
     window.onload = function () {
-      var supportType = ['image/svg+xml', 'image/png', 'image/jpeg']
+      var supportType = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif']
       var uploader = document.getElementById('fileupload')
       var textarea = document.getElementById('textarea')
       var convert = document.getElementById('convert')
@@ -69,7 +72,7 @@
       }
 
       function svgToBase64 () {
-        var base64 = SVGToBase64XML(textarea.value, {
+        var base64 = ImageToBase64(textarea.value, {
           doubleQuote: checkbox.checked
         })
         resultTextarea.value = base64
@@ -77,8 +80,10 @@
         resultToggle('block')
       }
 
-      function imageToBase64 () {
-        var file = uploader.files[0]
+      function imageToBase64 (file) {
+        if (typeof file === 'undefined') {
+          file = uploader.files[0]
+        }
         var reader = new FileReader()
         reader.readAsDataURL(file)
         reader.onload = function () {
@@ -101,7 +106,7 @@
             svgToBase64()
             clearUploader()
           } else {
-            imageToBase64()
+            imageToBase64(file)
           }
           convertDisabled(false)
         } else {
@@ -125,6 +130,17 @@
         } else {
           resultToggle('none')
           convertDisabled(true)
+        }
+      })
+
+      resultTextarea.addEventListener('click', async function () {
+        if (resultTextarea.value && 'clipboard' in navigator) {
+          try {
+            await navigator.clipboard.writeText(resultTextarea.value)
+            alert('√ 复制成功')
+          } catch (err) {
+            alert(err.message)
+          }
         }
       })
 
