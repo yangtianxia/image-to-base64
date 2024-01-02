@@ -9,7 +9,8 @@
     root.ImageToBase64 = factory()
   }
 })(this, function() {
-  var prefix = 'data:image/svg+xml,'
+  var prefix = 'data:image/'
+  var svg = prefix + 'svg+xml,'
   var space = '%20'
   var quotes = '%22'
   var equal = '%3D'
@@ -21,10 +22,15 @@
       }
     }
 
-    if (template.indexOf(prefix) === 0) {
-      template = template.replace(new RegExp(prefix.replace(/\+/, '\\+')), '')
-      template = template.replace(/'/g, '"')
-      return decodeURIComponent(template)
+    if (template.indexOf(svg) === 0) {
+      var str = template.replace(new RegExp(svg.replace(/\+/, '\\+')), '')
+      str = str.replace(/'/g, '"') 
+      return {
+        data: decodeURIComponent(str),
+        input: template
+      }
+    } else if (template.indexOf(prefix) === 0) {
+      return template
     }
 
     var data = encodeURIComponent(template)
@@ -36,6 +42,6 @@
     // 处理等号
     data = data.replace(new RegExp(equal, 'g'), '=')
 
-    return prefix + data
+    return svg + data
   }
 })

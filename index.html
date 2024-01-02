@@ -72,11 +72,17 @@
       }
 
       function svgToBase64 () {
-        var base64 = ImageToBase64(textarea.value, {
+        var result = ImageToBase64(textarea.value, {
           doubleQuote: checkbox.checked
         })
-        resultTextarea.value = base64
-        resultImg.src = base64
+
+        if (typeof result === 'string') {
+          resultTextarea.value = result
+          resultImg.src = result
+        } else {
+          resultTextarea.value = result.data
+          resultImg.src = result.input
+        }
         resultToggle('block')
       }
 
