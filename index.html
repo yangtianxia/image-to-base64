@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Image To Base64</title>
   <meta name="description" content="image to the base64 format.">
-  <meta name="keywords" content="image转base64,image-to-base64,base64">
+  <meta name="keywords" content="svg转base64,image转base64,image-to-base64,base64">
   <link rel="stylesheet" type="text/css" href="./index.css">
 </head>
 <body>
@@ -50,7 +50,7 @@
   <script type="text/javascript" src="./compiler.js"></script>
   <script type="text/javascript">
     window.onload = function () {
-      var supportType = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif']
+      var supportType = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/webp']
       var uploader = document.getElementById('fileupload')
       var textarea = document.getElementById('textarea')
       var convert = document.getElementById('convert')
@@ -104,6 +104,8 @@
       }
 
       async function transferFile (file) {
+        if (!file) return
+
         if (supportType.indexOf(file.type) !== -1) {
           if (file.type === 'image/svg+xml') {
             var fileText = await file.text()
