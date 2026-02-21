@@ -72,8 +72,7 @@ Base64 图片编码常用于：
 - 嵌入小图片资源减少网络请求
 - 在单文件组件或 Markdown 中嵌入图像
 - 在 CSS 中快速内联图像，无需外部资源
-- 编写示例 / 文档 / 快速原型样式  
-（具体用法可参考一般 Base64 转换原理）([base64.guru](https://base64.guru/converter/encode/image?utm_source=chatgpt.com))
+- 编写示例 / 文档 / 快速原型样式
 
 ---
 
