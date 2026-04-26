@@ -1,7 +1,7 @@
 (function(root, factory) {
   if (typeof exports === 'object' && typeof module === 'object') {
     module.exports = factory(require)
-  } else if (typeof define === 'function' && define.md) {
+  } else if (typeof define === 'function' && define.amd) {
     define(factory())
   } else if (typeof exports === 'object') {
     exports['ImageToBase64'] = factory()

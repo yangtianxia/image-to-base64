@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -11,24 +11,55 @@
   <link rel="stylesheet" type="text/css" href="./index.css">
 </head>
 <body>
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
   <section class="container">
     <header>
       <h1>图片转Base64</h1>
       <a target="_blank" rel="noreferrer" href="https://github.com/yangtianxia/image-to-base64">
         <img src="https://img.shields.io/github/stars/yangtianxia/image-to-base64?style=social" alt="image-to-base64" />
       </a>
+      <button type="button" id="theme-toggle" class="theme-toggle" title="切换主题">🌙</button>
     </header>
     <main>
+
+      <!-- URL 输入 -->
+      <section class="url-section">
+        <div class="url-row">
+          <input type="url" id="url-input" class="url-input" placeholder="粘贴图片 URL 后点击转换..." />
+          <button type="button" id="url-convert" class="url-convert-btn">转换</button>
+        </div>
+      </section>
+
+      <section class="separate"><span>or</span></section>
+
+      <!-- 文件上传（支持批量） -->
       <section class="fileupload">
-        <span>上传文件</span>
-        <input id="fileupload" type="file" accept="image/svg" />
+        <span>上传文件（支持多选/拖拽）</span>
+        <input id="fileupload" type="file" accept="image/*" multiple />
       </section>
-      <section class="separate">
-        <span>or</span>
-      </section>
+
+      <section class="separate"><span>or</span></section>
+
+      <!-- SVG 文本输入 -->
       <section class="textarea">
         <textarea id="textarea" placeholder="仅粘贴SVG文件内容"></textarea>
       </section>
+
+      <!-- 压缩选项（PNG/JPEG 时显示） -->
+      <section id="compress-section" class="compress-section" style="display:none">
+        <div class="compress-item">
+          <label for="max-width">最大宽度</label>
+          <input type="number" id="max-width" value="1200" min="100" max="9999" />
+          <span>px</span>
+        </div>
+        <div class="compress-item">
+          <label for="quality">压缩质量</label>
+          <input type="range" id="quality" min="0.1" max="1" step="0.05" value="0.85" />
+          <span id="quality-display">85%</span>
+        </div>
+      </section>
+
+      <!-- 操作栏 -->
       <section class="action">
         <button id="convert" disabled type="button">convert</button>
         <label class="checkbox">
@@ -36,96 +67,482 @@
           <span class="checkbox-label">双引号模式</span>
         </label>
       </section>
+
+      <!-- 结果 -->
       <section id="result" class="result">
-        <div class="result-wrapper">
-          <div class="result-textarea">
-            <textarea readonly id="result-textarea"></textarea>
-          </div>
-          <div class="result-thumb">
-            <img id="result-img" />
+        <div class="result-format">
+          <button type="button" class="format-btn format-btn--active" data-format="raw">纯Base64</button>
+          <button type="button" class="format-btn" data-format="css">CSS background</button>
+          <button type="button" class="format-btn" data-format="html">HTML img</button>
+        </div>
+
+        <!-- 单文件结果 -->
+        <div id="result-single">
+          <div class="result-wrapper">
+            <div class="result-textarea">
+              <textarea readonly id="result-textarea"></textarea>
+            </div>
+            <div class="result-thumb">
+              <img id="result-img" />
+            </div>
           </div>
         </div>
+
+        <!-- 批量结果 -->
+        <div id="result-batch" style="display:none">
+          <div class="batch-header">
+            <span id="batch-count"></span>
+            <button type="button" id="copy-all">复制全部</button>
+          </div>
+          <div id="batch-list"></div>
+        </div>
       </section>
+
+      <!-- 历史记录 -->
+      <section id="history-section" class="history-section" style="display:none">
+        <div class="history-header">
+          <span class="history-title">转换历史</span>
+          <button type="button" id="clear-history">清除历史</button>
+        </div>
+        <div id="history-list" class="history-list"></div>
+      </section>
+
     </main>
   </section>
+
   <script type="text/javascript" src="./compiler.js"></script>
   <script type="text/javascript">
     window.onload = function () {
       var supportType = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/webp']
-      var uploader = document.getElementById('fileupload')
-      var textarea = document.getElementById('textarea')
-      var convert = document.getElementById('convert')
-      var checkbox = document.getElementById('checkbox')
-      var result = document.getElementById('result')
-      var resultImg = document.getElementById('result-img')
-      var resultTextarea = document.getElementById('result-textarea')
+      var FILE_SIZE_WARNING = 5 * 1024 * 1024
+      var HISTORY_MAX = 10
+      var currentFormat = 'raw'
+      var currentBase64 = ''
+      var batchResults = []
 
-      function resultToggle (display) {
-        result.style.display = display
+      var uploader      = document.getElementById('fileupload')
+      var textarea      = document.getElementById('textarea')
+      var convert       = document.getElementById('convert')
+      var checkbox      = document.getElementById('checkbox')
+      var resultSection = document.getElementById('result')
+      var resultImg     = document.getElementById('result-img')
+      var resultTextarea = document.getElementById('result-textarea')
+      var toastContainer = document.getElementById('toast-container')
+      var formatBtns    = document.querySelectorAll('.format-btn')
+      var resultSingle  = document.getElementById('result-single')
+      var resultBatch   = document.getElementById('result-batch')
+      var batchList     = document.getElementById('batch-list')
+      var batchCount    = document.getElementById('batch-count')
+      var copyAllBtn    = document.getElementById('copy-all')
+      var urlInputEl    = document.getElementById('url-input')
+      var urlConvertBtn = document.getElementById('url-convert')
+      var historyList   = document.getElementById('history-list')
+      var clearHistoryBtn = document.getElementById('clear-history')
+      var historySection = document.getElementById('history-section')
+      var themeToggle   = document.getElementById('theme-toggle')
+      var maxWidthInput = document.getElementById('max-width')
+      var qualityInput  = document.getElementById('quality')
+      var qualityDisplay = document.getElementById('quality-display')
+      var compressSection = document.getElementById('compress-section')
+
+      // ── Toast ────────────────────────────────────────────────
+      function showToast(message, type) {
+        var toast = document.createElement('div')
+        toast.className = 'toast toast--' + (type || 'success')
+        toast.textContent = message
+        toastContainer.appendChild(toast)
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            toast.classList.add('toast--show')
+          })
+        })
+        setTimeout(function () {
+          toast.classList.remove('toast--show')
+          toast.addEventListener('transitionend', function handler() {
+            toast.removeEventListener('transitionend', handler)
+            if (toast.parentNode) toast.parentNode.removeChild(toast)
+          })
+        }, 2500)
       }
 
-      function convertDisabled (disabled) {
+      // ── Clipboard ────────────────────────────────────────────
+      function copyText(text) {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(function () {
+            showToast('复制成功', 'success')
+          }).catch(function (err) {
+            fallbackCopy(text, err)
+          })
+        } else {
+          fallbackCopy(text, null)
+        }
+      }
+
+      function fallbackCopy(text, originalErr) {
+        var tmp = document.createElement('textarea')
+        tmp.value = text
+        tmp.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none'
+        document.body.appendChild(tmp)
+        tmp.focus()
+        tmp.select()
+        var ok = false
+        try { ok = document.execCommand('copy') } catch (e) {}
+        document.body.removeChild(tmp)
+        if (ok) {
+          showToast('复制成功', 'success')
+        } else {
+          showToast(originalErr ? originalErr.message : '复制失败，请手动复制', 'error')
+        }
+      }
+
+      // ── Output Format ────────────────────────────────────────
+      function getFormattedOutput(base64, format) {
+        if (format === 'css')  return 'background-image: url("' + base64 + '");'
+        if (format === 'html') return '<img src="' + base64 + '" alt="" />'
+        return base64
+      }
+
+      // ── Dark Mode ────────────────────────────────────────────
+      function setTheme(dark) {
+        document.body.classList.toggle('dark', dark)
+        themeToggle.textContent = dark ? '☀️' : '🌙'
+        localStorage.setItem('theme', dark ? 'dark' : 'light')
+      }
+
+      var savedTheme  = localStorage.getItem('theme')
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      setTheme(savedTheme === 'dark' || (!savedTheme && prefersDark))
+
+      themeToggle.addEventListener('click', function () {
+        setTheme(!document.body.classList.contains('dark'))
+      })
+
+      // ── History ──────────────────────────────────────────────
+      function loadHistory() {
+        try { return JSON.parse(localStorage.getItem('base64history') || '[]') }
+        catch (e) { return [] }
+      }
+
+      function saveToHistory(name, base64, mimeType) {
+        if (base64.length > 500 * 1024) return  // 跳过超大条目，避免超出 storage 限额
+        var history = loadHistory()
+        history.unshift({ name: name, base64: base64, mimeType: mimeType, time: Date.now() })
+        if (history.length > HISTORY_MAX) history = history.slice(0, HISTORY_MAX)
+        try { localStorage.setItem('base64history', JSON.stringify(history)) }
+        catch (e) { /* quota exceeded */ }
+        renderHistory()
+      }
+
+      function renderHistory() {
+        var history = loadHistory()
+        historySection.style.display = history.length === 0 ? 'none' : 'block'
+        historyList.innerHTML = ''
+        history.forEach(function (item) {
+          var card = document.createElement('div')
+          card.className = 'history-item'
+
+          var thumb = document.createElement('img')
+          thumb.className = 'history-thumb'
+          thumb.src = item.base64
+          thumb.alt = item.name
+
+          var info = document.createElement('div')
+          info.className = 'history-info'
+
+          var nameEl = document.createElement('div')
+          nameEl.className = 'history-name'
+          nameEl.textContent = item.name
+          nameEl.title = item.name
+
+          var timeEl = document.createElement('div')
+          timeEl.className = 'history-time'
+          timeEl.textContent = new Date(item.time).toLocaleString()
+
+          var copyBtn = document.createElement('button')
+          copyBtn.type = 'button'
+          copyBtn.className = 'history-copy-btn'
+          copyBtn.textContent = '复制'
+          ;(function (b64) {
+            copyBtn.addEventListener('click', function () {
+              copyText(getFormattedOutput(b64, currentFormat))
+            })
+          })(item.base64)
+
+          info.appendChild(nameEl)
+          info.appendChild(timeEl)
+          info.appendChild(copyBtn)
+          card.appendChild(thumb)
+          card.appendChild(info)
+          historyList.appendChild(card)
+        })
+      }
+
+      clearHistoryBtn.addEventListener('click', function () {
+        localStorage.removeItem('base64history')
+        renderHistory()
+        showToast('历史已清除', 'success')
+      })
+
+      renderHistory()
+
+      // ── Compression ──────────────────────────────────────────
+      qualityInput.addEventListener('input', function () {
+        qualityDisplay.textContent = Math.round(qualityInput.value * 100) + '%'
+      })
+
+      function compressImage(file) {
+        return new Promise(function (resolve) {
+          var maxWidth = parseInt(maxWidthInput.value) || 1200
+          var quality  = parseFloat(qualityInput.value) || 0.85
+          var img = new Image()
+          var blobUrl = URL.createObjectURL(file)
+          img.onload = function () {
+            URL.revokeObjectURL(blobUrl)
+            var w = img.naturalWidth
+            var h = img.naturalHeight
+            if (w > maxWidth) {
+              h = Math.round(h * maxWidth / w)
+              w = maxWidth
+            }
+            var canvas = document.createElement('canvas')
+            canvas.width  = w
+            canvas.height = h
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+            var type = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+            resolve(canvas.toDataURL(type, quality))
+          }
+          img.onerror = function () {
+            URL.revokeObjectURL(blobUrl)
+            resolve(null)
+          }
+          img.src = blobUrl
+        })
+      }
+
+      // ── Result UI ────────────────────────────────────────────
+      function resultToggle(display) {
+        resultSection.style.display = display
+      }
+
+      function convertDisabled(disabled) {
         convert.disabled = disabled
       }
 
-      function clearUploader () {
+      function clearUploader() {
         uploader.value = ''
       }
 
-      function svgToBase64 () {
-        var result = ImageToBase64(textarea.value, {
-          doubleQuote: checkbox.checked
-        })
-
-        if (typeof result === 'string') {
-          resultTextarea.value = result
-          resultImg.src = result
-        } else {
-          resultTextarea.value = result.data
-          resultImg.src = result.input
-        }
+      function showSingleResult(base64, imgSrc) {
+        currentBase64 = base64
+        resultTextarea.value = getFormattedOutput(base64, currentFormat)
+        resultImg.src = imgSrc || base64
+        resultSingle.style.display = 'block'
+        resultBatch.style.display  = 'none'
         resultToggle('block')
       }
 
-      function imageToBase64 (file) {
-        if (typeof file === 'undefined') {
-          file = uploader.files[0]
-        }
+      function renderBatchList() {
+        batchList.innerHTML = ''
+        batchResults.forEach(function (item) {
+          var card = document.createElement('div')
+          card.className = 'batch-item'
+
+          var thumb = document.createElement('img')
+          thumb.className = 'batch-thumb'
+          thumb.src = item.imgSrc || item.base64
+          thumb.alt = item.name
+
+          var info = document.createElement('div')
+          info.className = 'batch-info'
+
+          var nameEl = document.createElement('div')
+          nameEl.className = 'batch-name'
+          nameEl.textContent = item.name
+          nameEl.title = item.name
+
+          var output = document.createElement('textarea')
+          output.className = 'batch-output'
+          output.readOnly = true
+          output.value = getFormattedOutput(item.base64, currentFormat)
+          ;(function (el) {
+            el.addEventListener('click', function () { copyText(el.value) })
+          })(output)
+
+          info.appendChild(nameEl)
+          info.appendChild(output)
+          card.appendChild(thumb)
+          card.appendChild(info)
+          batchList.appendChild(card)
+        })
+      }
+
+      function showBatchResults(items) {
+        batchResults = items
+        batchCount.textContent = '共 ' + items.length + ' 个文件'
+        resultSingle.style.display = 'none'
+        resultBatch.style.display  = 'block'
+        resultToggle('block')
+        renderBatchList()
+      }
+
+      // ── Format buttons ────────────────────────────────────────
+      for (var i = 0; i < formatBtns.length; i++) {
+        formatBtns[i].addEventListener('click', function (e) {
+          for (var j = 0; j < formatBtns.length; j++) {
+            formatBtns[j].classList.remove('format-btn--active')
+          }
+          e.currentTarget.classList.add('format-btn--active')
+          currentFormat = e.currentTarget.getAttribute('data-format')
+          if (currentBase64) resultTextarea.value = getFormattedOutput(currentBase64, currentFormat)
+          if (batchResults.length > 0) renderBatchList()
+        })
+      }
+
+      copyAllBtn.addEventListener('click', function () {
+        var all = batchResults.map(function (item) {
+          return getFormattedOutput(item.base64, currentFormat)
+        }).join('\n\n')
+        copyText(all)
+      })
+
+      resultTextarea.addEventListener('click', function () {
+        if (resultTextarea.value) copyText(resultTextarea.value)
+      })
+
+      // ── SVG Conversion ───────────────────────────────────────
+      function svgToBase64() {
+        var res = ImageToBase64(textarea.value, { doubleQuote: checkbox.checked })
+        var base64 = typeof res === 'string' ? res : res.input
+        showSingleResult(base64, base64)
+        saveToHistory('SVG', base64, 'image/svg+xml')
+      }
+
+      // ── File Processing ──────────────────────────────────────
+      function readFileAsDataURL(file, callback) {
         var reader = new FileReader()
         reader.readAsDataURL(file)
-        reader.onload = function () {
-          var base64 = reader.result
-          resultTextarea.value = base64
-          resultImg.src = base64
-          resultToggle('block')
-        }
-        reader.onerror = function () {
-          alert('操作失败')
-        }
+        reader.onload  = function () { callback(reader.result) }
+        reader.onerror = function () { callback(null) }
       }
 
-      async function transferFile (file) {
-        if (!file) return
-
-        if (supportType.indexOf(file.type) !== -1) {
-          if (file.type === 'image/svg+xml') {
-            var fileText = await file.text()
-            textarea.value = fileText
-            textarea.focus()
-            svgToBase64()
-            clearUploader()
+      function processFile(file) {
+        return new Promise(function (resolve) {
+          var canCompress = file.type === 'image/png' || file.type === 'image/jpeg'
+          if (canCompress) {
+            compressImage(file).then(function (compressed) {
+              if (compressed) {
+                resolve({ base64: compressed, imgSrc: compressed, name: file.name })
+              } else {
+                readFileAsDataURL(file, function (base64) {
+                  resolve(base64 ? { base64: base64, imgSrc: base64, name: file.name } : null)
+                })
+              }
+            })
           } else {
-            imageToBase64(file)
+            readFileAsDataURL(file, function (base64) {
+              resolve(base64 ? { base64: base64, imgSrc: base64, name: file.name } : null)
+            })
           }
-          convertDisabled(false)
-        } else {
-          clearUploader()
-          convertDisabled(textarea.value === '')
-          alert('不支持的文件格式')
-        }
+        })
       }
 
-      textarea.addEventListener('focus', function (event) {
+      // ── Batch File Transfer ───────────────────────────────────
+      async function transferFiles(files) {
+        if (!files || files.length === 0) return
+
+        var valid = []
+        var hasInvalid = false
+        for (var k = 0; k < files.length; k++) {
+          if (supportType.indexOf(files[k].type) !== -1) {
+            valid.push(files[k])
+            if (files[k].size > FILE_SIZE_WARNING) {
+              showToast(files[k].name + ' 较大（' + (files[k].size / 1024 / 1024).toFixed(1) + 'MB）', 'warning')
+            }
+          } else {
+            hasInvalid = true
+          }
+        }
+        if (hasInvalid) showToast('已跳过不支持的文件格式', 'error')
+        if (valid.length === 0) { clearUploader(); return }
+
+        // 单个 SVG：填入 textarea 走文本转换流程
+        if (valid.length === 1 && valid[0].type === 'image/svg+xml') {
+          var fileText = await valid[0].text()
+          textarea.value = fileText
+          convertDisabled(false)
+          compressSection.style.display = 'none'
+          svgToBase64()
+          clearUploader()
+          return
+        }
+
+        // 有可压缩图片时显示压缩选项
+        var hasCompressable = valid.some(function (f) {
+          return f.type === 'image/png' || f.type === 'image/jpeg'
+        })
+        compressSection.style.display = hasCompressable ? 'flex' : 'none'
+
+        convertDisabled(false)
+
+        var results = []
+        for (var m = 0; m < valid.length; m++) {
+          var res = await processFile(valid[m])
+          if (res) {
+            results.push(res)
+            saveToHistory(res.name, res.base64, valid[m].type)
+          } else {
+            showToast(valid[m].name + ' 处理失败', 'error')
+          }
+        }
+
+        if (results.length === 1) {
+          showSingleResult(results[0].base64, results[0].imgSrc)
+        } else if (results.length > 1) {
+          showBatchResults(results)
+        }
+
+        clearUploader()
+      }
+
+      // ── URL Conversion ────────────────────────────────────────
+      urlConvertBtn.addEventListener('click', async function () {
+        var url = urlInputEl.value.trim()
+        if (!url) { showToast('请输入图片 URL', 'error'); return }
+
+        urlConvertBtn.disabled = true
+        urlConvertBtn.textContent = '转换中...'
+
+        try {
+          var response = await fetch(url)
+          if (!response.ok) throw new Error('HTTP ' + response.status)
+          var blob = await response.blob()
+          if (supportType.indexOf(blob.type) === -1) {
+            showToast('不支持的图片类型：' + (blob.type || '未知'), 'error')
+            return
+          }
+          var fname = url.split('/').pop().split('?')[0] || 'image'
+          var file  = new File([blob], fname, { type: blob.type })
+          var res   = await processFile(file)
+          if (res) {
+            showSingleResult(res.base64, res.imgSrc)
+            saveToHistory(fname, res.base64, blob.type)
+            showToast('转换成功', 'success')
+          }
+        } catch (err) {
+          var msg = err.message || ''
+          if (msg.indexOf('fetch') !== -1 || msg.indexOf('Failed') !== -1 || msg.indexOf('NetworkError') !== -1) {
+            showToast('无法加载该 URL，可能存在跨域限制', 'error')
+          } else {
+            showToast('加载失败：' + msg, 'error')
+          }
+        } finally {
+          urlConvertBtn.disabled = false
+          urlConvertBtn.textContent = '转换'
+        }
+      })
+
+      // ── Textarea events ───────────────────────────────────────
+      textarea.addEventListener('focus', function () {
         textarea.parentElement.classList.add('focus')
       })
 
@@ -136,48 +553,34 @@
       textarea.addEventListener('input', function (event) {
         if (event.target.value) {
           convertDisabled(false)
+          compressSection.style.display = 'none'
         } else {
           resultToggle('none')
           convertDisabled(true)
         }
       })
 
-      resultTextarea.addEventListener('click', async function () {
-        if (resultTextarea.value && 'clipboard' in navigator) {
-          try {
-            await navigator.clipboard.writeText(resultTextarea.value)
-            alert('√ 复制成功')
-          } catch (err) {
-            alert(err.message)
-          }
-        }
-      })
-
-      uploader.addEventListener('change', function (event) {
-        var file = event.target.files[0]
-        transferFile(file)
-      })
-
-      convert.addEventListener('click', function (event) {
+      convert.addEventListener('click', function () {
         if (textarea.value) {
+          if (textarea.value.indexOf('<svg') === -1) {
+            showToast('内容不含 <svg 标签，请确认格式', 'warning')
+          }
           svgToBase64()
         } else if (uploader.files.length === 0) {
           resultToggle('none')
         }
       })
 
-      document.addEventListener('drop', function (event) {
-        var file = event.dataTransfer.files[0]
-        transferFile(file)
+      uploader.addEventListener('change', function (event) {
+        transferFiles(event.target.files)
       })
 
-      document.ondrop = function (event) {
-        event.preventDefault()
-      }
+      document.addEventListener('drop', function (event) {
+        transferFiles(event.dataTransfer.files)
+      })
 
-      document.ondragover = function (event) {
-        event.preventDefault()
-      }
+      document.ondrop    = function (event) { event.preventDefault() }
+      document.ondragover = function (event) { event.preventDefault() }
     }
   </script>
 </body>
