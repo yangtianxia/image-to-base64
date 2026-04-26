@@ -22,19 +22,9 @@
     </header>
     <main>
 
-      <!-- URL 输入 -->
-      <section class="url-section">
-        <div class="url-row">
-          <input type="url" id="url-input" class="url-input" placeholder="粘贴图片 URL 后点击转换..." />
-          <button type="button" id="url-convert" class="url-convert-btn">转换</button>
-        </div>
-      </section>
-
-      <section class="separate"><span>or</span></section>
-
-      <!-- 文件上传（支持批量） -->
+      <!-- 文件上传（支持批量/拖拽/粘贴） -->
       <section class="fileupload">
-        <span>上传文件（支持多选/拖拽）</span>
+        <span>上传文件（支持多选 / 拖拽 / Ctrl+V 粘贴）</span>
         <input id="fileupload" type="file" accept="image/*" multiple />
       </section>
 
@@ -134,8 +124,6 @@
       var batchList     = document.getElementById('batch-list')
       var batchCount    = document.getElementById('batch-count')
       var copyAllBtn    = document.getElementById('copy-all')
-      var urlInputEl    = document.getElementById('url-input')
-      var urlConvertBtn = document.getElementById('url-convert')
       var historyList   = document.getElementById('history-list')
       var clearHistoryBtn = document.getElementById('clear-history')
       var historySection = document.getElementById('history-section')
@@ -504,41 +492,18 @@
         clearUploader()
       }
 
-      // ── URL Conversion ────────────────────────────────────────
-      urlConvertBtn.addEventListener('click', async function () {
-        var url = urlInputEl.value.trim()
-        if (!url) { showToast('请输入图片 URL', 'error'); return }
-
-        urlConvertBtn.disabled = true
-        urlConvertBtn.textContent = '转换中...'
-
-        try {
-          var response = await fetch(url)
-          if (!response.ok) throw new Error('HTTP ' + response.status)
-          var blob = await response.blob()
-          if (supportType.indexOf(blob.type) === -1) {
-            showToast('不支持的图片类型：' + (blob.type || '未知'), 'error')
-            return
+      // ── Paste Image ──────────────────────────────────────────
+      document.addEventListener('paste', function (event) {
+        var items = event.clipboardData && event.clipboardData.items
+        if (!items) return
+        var files = []
+        for (var p = 0; p < items.length; p++) {
+          if (items[p].kind === 'file' && items[p].type.indexOf('image/') === 0) {
+            var f = items[p].getAsFile()
+            if (f) files.push(f)
           }
-          var fname = url.split('/').pop().split('?')[0] || 'image'
-          var file  = new File([blob], fname, { type: blob.type })
-          var res   = await processFile(file)
-          if (res) {
-            showSingleResult(res.base64, res.imgSrc)
-            saveToHistory(fname, res.base64, blob.type)
-            showToast('转换成功', 'success')
-          }
-        } catch (err) {
-          var msg = err.message || ''
-          if (msg.indexOf('fetch') !== -1 || msg.indexOf('Failed') !== -1 || msg.indexOf('NetworkError') !== -1) {
-            showToast('无法加载该 URL，可能存在跨域限制', 'error')
-          } else {
-            showToast('加载失败：' + msg, 'error')
-          }
-        } finally {
-          urlConvertBtn.disabled = false
-          urlConvertBtn.textContent = '转换'
         }
+        if (files.length > 0) transferFiles(files)
       })
 
       // ── Textarea events ───────────────────────────────────────

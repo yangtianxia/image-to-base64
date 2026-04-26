@@ -152,56 +152,6 @@ main {
   box-sizing: border-box;
 }
 
-/* ── URL Section ────────────────────────────────────────────── */
-.url-row {
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: -ms-flexbox;
-  display: flex;
-  gap: 8px;
-}
-
-.url-input {
-  -webkit-box-flex: 1;
-  -webkit-flex: 1;
-  -ms-flex: 1;
-  flex: 1;
-  padding: 10px 16px;
-  border-radius: 6px;
-  border: 1px solid rgba(44, 135, 221, 0.3);
-  background-color: var(--input-bg);
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
-  outline: none;
-  transition: border-color 0.15s, background-color 0.3s, color 0.3s;
-  box-sizing: border-box;
-}
-
-.url-input:focus {
-  border-color: var(--primary);
-  background-color: var(--input-bg-focus);
-}
-
-.url-input::-webkit-input-placeholder {
-  color: rgba(44, 135, 221, 0.5);
-}
-
-body.dark .url-input {
-  border-color: rgba(74, 155, 232, 0.3);
-}
-
-body.dark .url-input::-webkit-input-placeholder {
-  color: rgba(74, 155, 232, 0.5);
-}
-
-button.url-convert-btn {
-  padding: 10px 20px;
-  -webkit-flex-shrink: 0;
-  -ms-flex-negative: 0;
-  flex-shrink: 0;
-}
-
 /* ── Fileupload ─────────────────────────────────────────────── */
 .fileupload {
   position: relative;
