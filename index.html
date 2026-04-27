@@ -47,6 +47,7 @@
           <input type="range" id="quality" min="0.1" max="1" step="0.05" value="0.85" />
           <span id="quality-display">85%</span>
         </div>
+        <button type="button" id="recompress" style="display:none">重新压缩</button>
       </section>
 
       <!-- 操作栏 -->
@@ -88,11 +89,14 @@
         </div>
       </section>
 
-      <!-- 历史记录 -->
+      <!-- 历史记录（最近 6 条） -->
       <section id="history-section" class="history-section" style="display:none">
         <div class="history-header">
           <span class="history-title">转换历史</span>
-          <button type="button" id="clear-history">清除历史</button>
+          <div class="history-actions">
+            <button type="button" id="view-more-history" style="display:none">查看更多</button>
+            <button type="button" id="clear-history">清除历史</button>
+          </div>
         </div>
         <div id="history-list" class="history-list"></div>
       </section>
@@ -100,15 +104,30 @@
     </main>
   </section>
 
+  <!-- 历史抽屉 -->
+  <div id="drawer-overlay" class="drawer-overlay"></div>
+  <div id="history-drawer" class="drawer">
+    <div class="drawer-header">
+      <span class="drawer-title">全部历史</span>
+      <button type="button" id="drawer-close">✕</button>
+    </div>
+    <div class="drawer-search">
+      <input type="text" id="history-search" placeholder="搜索文件名..." />
+    </div>
+    <div id="drawer-list" class="drawer-list"></div>
+  </div>
+
   <script type="text/javascript" src="./compiler.js"></script>
   <script type="text/javascript">
     window.onload = function () {
       var supportType = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/webp']
       var FILE_SIZE_WARNING = 5 * 1024 * 1024
-      var HISTORY_MAX = 10
+      var HISTORY_MAX = 30
+      var HISTORY_PREVIEW = 6
       var currentFormat = 'raw'
       var currentBase64 = ''
       var batchResults = []
+      var pendingFiles = []   // 当前待重压的非 SVG 文件
 
       var uploader      = document.getElementById('fileupload')
       var textarea      = document.getElementById('textarea')
@@ -124,14 +143,21 @@
       var batchList     = document.getElementById('batch-list')
       var batchCount    = document.getElementById('batch-count')
       var copyAllBtn    = document.getElementById('copy-all')
-      var historyList   = document.getElementById('history-list')
-      var clearHistoryBtn = document.getElementById('clear-history')
-      var historySection = document.getElementById('history-section')
+      var historyList      = document.getElementById('history-list')
+      var clearHistoryBtn  = document.getElementById('clear-history')
+      var historySection   = document.getElementById('history-section')
+      var viewMoreBtn      = document.getElementById('view-more-history')
+      var drawerOverlay    = document.getElementById('drawer-overlay')
+      var historyDrawer    = document.getElementById('history-drawer')
+      var drawerClose      = document.getElementById('drawer-close')
+      var drawerList       = document.getElementById('drawer-list')
+      var historySearch    = document.getElementById('history-search')
       var themeToggle   = document.getElementById('theme-toggle')
       var maxWidthInput = document.getElementById('max-width')
       var qualityInput  = document.getElementById('quality')
       var qualityDisplay = document.getElementById('quality-display')
       var compressSection = document.getElementById('compress-section')
+      var recompressBtn   = document.getElementById('recompress')
 
       // ── Toast ────────────────────────────────────────────────
       function showToast(message, type) {
@@ -221,53 +247,112 @@
         renderHistory()
       }
 
+      function makeHistoryCard(item) {
+        var card = document.createElement('div')
+        card.className = 'history-item'
+
+        var thumb = document.createElement('img')
+        thumb.className = 'history-thumb'
+        thumb.src = item.base64
+        thumb.alt = item.name
+
+        var info = document.createElement('div')
+        info.className = 'history-info'
+
+        var nameEl = document.createElement('div')
+        nameEl.className = 'history-name'
+        nameEl.textContent = item.name
+        nameEl.title = item.name
+
+        var timeEl = document.createElement('div')
+        timeEl.className = 'history-time'
+        timeEl.textContent = new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+        var copyBtn = document.createElement('button')
+        copyBtn.type = 'button'
+        copyBtn.className = 'history-copy-btn'
+        copyBtn.textContent = '复制'
+        ;(function (b64) {
+          copyBtn.addEventListener('click', function () {
+            copyText(getFormattedOutput(b64, currentFormat))
+          })
+        })(item.base64)
+
+        info.appendChild(nameEl)
+        info.appendChild(timeEl)
+        info.appendChild(copyBtn)
+        card.appendChild(thumb)
+        card.appendChild(info)
+        return card
+      }
+
+      function formatGroupDate(ts) {
+        var d = new Date(ts)
+        var today = new Date()
+        var yesterday = new Date(today)
+        yesterday.setDate(today.getDate() - 1)
+        if (d.toDateString() === today.toDateString()) return '今天'
+        if (d.toDateString() === yesterday.toDateString()) return '昨天'
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+      }
+
       function renderHistory() {
         var history = loadHistory()
         historySection.style.display = history.length === 0 ? 'none' : 'block'
+        viewMoreBtn.style.display = history.length > HISTORY_PREVIEW ? 'inline-block' : 'none'
         historyList.innerHTML = ''
-        history.forEach(function (item) {
-          var card = document.createElement('div')
-          card.className = 'history-item'
-
-          var thumb = document.createElement('img')
-          thumb.className = 'history-thumb'
-          thumb.src = item.base64
-          thumb.alt = item.name
-
-          var info = document.createElement('div')
-          info.className = 'history-info'
-
-          var nameEl = document.createElement('div')
-          nameEl.className = 'history-name'
-          nameEl.textContent = item.name
-          nameEl.title = item.name
-
-          var timeEl = document.createElement('div')
-          timeEl.className = 'history-time'
-          timeEl.textContent = new Date(item.time).toLocaleString()
-
-          var copyBtn = document.createElement('button')
-          copyBtn.type = 'button'
-          copyBtn.className = 'history-copy-btn'
-          copyBtn.textContent = '复制'
-          ;(function (b64) {
-            copyBtn.addEventListener('click', function () {
-              copyText(getFormattedOutput(b64, currentFormat))
-            })
-          })(item.base64)
-
-          info.appendChild(nameEl)
-          info.appendChild(timeEl)
-          info.appendChild(copyBtn)
-          card.appendChild(thumb)
-          card.appendChild(info)
-          historyList.appendChild(card)
+        history.slice(0, HISTORY_PREVIEW).forEach(function (item) {
+          historyList.appendChild(makeHistoryCard(item))
         })
       }
+
+      function renderDrawer(keyword) {
+        var history = loadHistory()
+        if (keyword) {
+          var kw = keyword.toLowerCase()
+          history = history.filter(function (item) { return item.name.toLowerCase().indexOf(kw) !== -1 })
+        }
+        drawerList.innerHTML = ''
+        var lastGroup = ''
+        history.forEach(function (item) {
+          var group = formatGroupDate(item.time)
+          if (group !== lastGroup) {
+            var title = document.createElement('div')
+            title.className = 'drawer-group-title'
+            title.textContent = group
+            drawerList.appendChild(title)
+            lastGroup = group
+          }
+          drawerList.appendChild(makeHistoryCard(item))
+        })
+        if (history.length === 0) {
+          var empty = document.createElement('div')
+          empty.className = 'drawer-empty'
+          empty.textContent = keyword ? '没有匹配的记录' : '暂无历史记录'
+          drawerList.appendChild(empty)
+        }
+      }
+
+      function openDrawer() {
+        renderDrawer(historySearch.value)
+        historyDrawer.classList.add('drawer--open')
+        drawerOverlay.classList.add('drawer-overlay--show')
+      }
+
+      function closeDrawer() {
+        historyDrawer.classList.remove('drawer--open')
+        drawerOverlay.classList.remove('drawer-overlay--show')
+      }
+
+      viewMoreBtn.addEventListener('click', openDrawer)
+      drawerClose.addEventListener('click', closeDrawer)
+      drawerOverlay.addEventListener('click', closeDrawer)
+      historySearch.addEventListener('input', function () { renderDrawer(historySearch.value) })
 
       clearHistoryBtn.addEventListener('click', function () {
         localStorage.removeItem('base64history')
         renderHistory()
+        renderDrawer(historySearch.value)
         showToast('历史已清除', 'success')
       })
 
@@ -399,7 +484,25 @@
 
       // ── SVG Conversion ───────────────────────────────────────
       function svgToBase64() {
-        var res = ImageToBase64(textarea.value, { doubleQuote: checkbox.checked })
+        var input = textarea.value.trim()
+
+        // 支持粘贴 SVG Base64 Data URL，自动解码还原为原始 SVG
+        var b64prefix = 'data:image/svg+xml;base64,'
+        if (input.indexOf(b64prefix) === 0) {
+          try {
+            input = atob(input.slice(b64prefix.length))
+            textarea.value = input
+          } catch (e) {
+            showToast('Base64 解码失败', 'error')
+            return
+          }
+        }
+
+        compressSection.style.display = 'none'
+        recompressBtn.style.display   = 'none'
+        pendingFiles = []
+
+        var res = ImageToBase64(input, { doubleQuote: checkbox.checked })
         var base64 = typeof res === 'string' ? res : res.input
         showSingleResult(base64, base64)
         saveToHistory('SVG', base64, 'image/svg+xml')
@@ -464,12 +567,14 @@
           return
         }
 
-        // 有可压缩图片时显示压缩选项
+        // 有可压缩图片时显示压缩选项，并记录 pendingFiles 以供重新压缩
         var hasCompressable = valid.some(function (f) {
           return f.type === 'image/png' || f.type === 'image/jpeg'
         })
         compressSection.style.display = hasCompressable ? 'flex' : 'none'
-
+        recompressBtn.style.display   = hasCompressable ? 'inline-block' : 'none'
+        pendingFiles = valid
+        textarea.value = ''   // 清空 textarea，防止 convert 按钮误触 SVG 流程
         convertDisabled(false)
 
         var results = []
@@ -491,6 +596,21 @@
 
         clearUploader()
       }
+
+      // ── Recompress ────────────────────────────────────────────
+      recompressBtn.addEventListener('click', async function () {
+        if (pendingFiles.length === 0) return
+        var results = []
+        for (var r = 0; r < pendingFiles.length; r++) {
+          var res = await processFile(pendingFiles[r])
+          if (res) results.push(res)
+        }
+        if (results.length === 1) {
+          showSingleResult(results[0].base64, results[0].imgSrc)
+        } else if (results.length > 1) {
+          showBatchResults(results)
+        }
+      })
 
       // ── Paste Image ──────────────────────────────────────────
       document.addEventListener('paste', function (event) {
@@ -519,6 +639,8 @@
         if (event.target.value) {
           convertDisabled(false)
           compressSection.style.display = 'none'
+          recompressBtn.style.display   = 'none'
+          pendingFiles = []
         } else {
           resultToggle('none')
           convertDisabled(true)
