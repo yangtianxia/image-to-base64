@@ -7,102 +7,182 @@
   <title>图片转Base64 - 在线图像Base64编码工具 | 支持JPG/PNG/SVG/GIF</title>
   <meta name="description" content="免费在线图片转Base64工具！即时将JPG、PNG、SVG、GIF等图像转换为Base64编码格式，无需上传文件，保护隐私，快速生成Data URL代码。">
   <meta name="keywords" content="图片转base64,image to base64,svg转base64,base64编码工具,在线图片转码,data url生成器,base64转换,image转base64,图片base64编码,jpg转base64,png转base64">
-  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHJ4PSI2IiBmaWxsPSJ1cmwoI2dyYWQpIi8+PHJlY3QgeD0iNiIgeT0iMTAiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiNmZmYiIHJ4PSIxIi8+PHBhdGggZD0iTTYgMTAgTDEwIDYgTDE0IDEwIFoiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNMTYgMTYgTDIwIDEzIEwyMCAxOSBaIiBmaWxsPSIjZmZmIi8+PHJlY3QgeD0iMTgiIHk9IjE1IiB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSIjZmZmIi8+PHJlY3QgeD0iMjIiIHk9IjEyIiB3aWR0aD0iOCIgaGVpZ2h0PSIyIiBmaWxsPSIjZmZmIiByeD0iMSIvPjxyZWN0IHg9IjIyIiB5PSIxOCIgd2lkdGg9IjgiIGhlaWdodD0iMiIgZmlsbD0iI2ZmZiIgcng9IjEiLz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjNEE5MEUyIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMkM2RkQxIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PC9zdmc+">
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHJ4PSI2IiBmaWxsPSJ1cmwoI2dyYWQpIi8+PHJlY3QgeD0iNiIgeT0iMTAiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiNmZmYiIHJ4PSIxIi8+PHBhdGggZD0iTTYgMTAgTDEwIDYgTDE0IDEwIFoiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNMTYgMTYgTDIwIDEzIEwyMCAxOSBaIiBmaWxsPSIjZmZmIi8+PHJlY3QgeD0iMTgiIHk9IjE1IiB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSIjZmZmIi8+PHJlY3QgeD0iMjIiIHk9IjEyIiB3aWR0aD0iOCIgaGVpZ2h0PSIyIiBmaWxsPSIjZmZmIiByeD0iMSIvPjxyZWN0IHg9IjIyIiB5PSIxOCIgd2lkdGg9IjgiIGhlaWdodD0iMiIgZmlsbD0iI2ZmZiIgcng9IjEiLz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjNkE3OGY4Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjNGYzOGNhIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PC9zdmc+">
   <link rel="stylesheet" type="text/css" href="./index.css">
 </head>
 <body>
   <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
-  <section class="container">
-    <header>
-      <h1>图片转Base64</h1>
-      <a target="_blank" rel="noreferrer" href="https://github.com/yangtianxia/image-to-base64">
-        <img src="https://img.shields.io/github/stars/yangtianxia/image-to-base64?style=social" alt="image-to-base64" />
-      </a>
-      <button type="button" id="theme-toggle" class="theme-toggle" title="切换主题">🌙</button>
-    </header>
-    <main>
 
-      <!-- 文件上传（支持批量/拖拽/粘贴） -->
-      <section class="fileupload">
-        <span>上传文件（支持多选 / 拖拽 / Ctrl+V 粘贴）</span>
-        <input id="fileupload" type="file" accept="image/*" multiple />
-      </section>
+  <!-- 顶部导航 -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-brand">
+        <svg class="site-brand-icon" width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="7" fill="url(#lg)"/>
+          <rect x="6" y="10" width="8" height="8" fill="white" rx="1.5"/>
+          <path d="M6 10 L10 6 L14 10 Z" fill="white"/>
+          <path d="M16 16 L20 12.5 L20 19.5 Z" fill="white"/>
+          <rect x="18" y="15" width="2.5" height="2" fill="white" rx="0.5"/>
+          <rect x="22" y="11.5" width="8" height="2" fill="white" rx="1"/>
+          <rect x="22" y="18" width="8" height="2" fill="white" rx="1"/>
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#6366f1"/>
+              <stop offset="100%" stop-color="#4338ca"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="site-brand-name">Image to Base64</span>
+      </div>
+      <div class="site-header-right">
+        <a class="github-link" target="_blank" rel="noreferrer" href="https://github.com/yangtianxia/image-to-base64">
+          <img src="https://img.shields.io/github/stars/yangtianxia/image-to-base64?style=social" alt="GitHub Stars" />
+        </a>
+        <button type="button" id="theme-toggle" class="theme-toggle" title="切换主题">🌙</button>
+      </div>
+    </div>
+  </header>
 
-      <section class="separate"><span>or</span></section>
+  <!-- 主内容 -->
+  <div class="page-content">
 
-      <!-- SVG 文本输入 -->
-      <section class="textarea">
-        <textarea id="textarea" placeholder="仅粘贴SVG文件内容"></textarea>
-      </section>
+    <!-- 工具卡片 -->
+    <div class="tool-wrapper">
 
-      <!-- 压缩选项（PNG/JPEG 时显示） -->
-      <section id="compress-section" class="compress-section" style="display:none">
-        <div class="compress-item">
-          <label for="max-width">最大宽度</label>
-          <input type="number" id="max-width" value="1200" min="100" max="9999" />
-          <span>px</span>
+      <!-- 卡片标题行 -->
+      <div class="tool-header">
+        <div>
+          <h1 class="tool-title">图片转 Base64</h1>
+          <p class="tool-desc">在线将图像转为 Base64 Data URL，本地处理，不上传服务器</p>
         </div>
-        <div class="compress-item">
-          <label for="quality">压缩质量</label>
-          <input type="range" id="quality" min="0.1" max="1" step="0.05" value="0.85" />
-          <span id="quality-display">85%</span>
+        <div class="tool-header-badges">
+          <span class="badge">JPG</span>
+          <span class="badge">PNG</span>
+          <span class="badge">SVG</span>
+          <span class="badge">GIF</span>
         </div>
-        <button type="button" id="recompress" style="display:none">重新压缩</button>
-      </section>
+      </div>
 
-      <!-- 操作栏 -->
-      <section class="action">
-        <button id="convert" disabled type="button">convert</button>
-        <label class="checkbox">
-          <input id="checkbox" type="checkbox" />
-          <span class="checkbox-label">双引号模式</span>
-        </label>
-      </section>
+      <!-- 卡片主体：左右两栏 -->
+      <div class="tool-body">
 
-      <!-- 结果 -->
-      <section id="result" class="result">
-        <div class="result-format">
-          <button type="button" class="format-btn format-btn--active" data-format="raw">纯Base64</button>
-          <button type="button" class="format-btn" data-format="css">CSS background</button>
-          <button type="button" class="format-btn" data-format="html">HTML img</button>
-        </div>
+        <!-- 左：输入面板 -->
+        <div class="tool-panel tool-panel--input">
 
-        <!-- 单文件结果 -->
-        <div id="result-single">
-          <div class="result-wrapper">
-            <div class="result-textarea">
-              <textarea readonly id="result-textarea"></textarea>
+          <!-- 上传区 -->
+          <div class="upload-zone">
+            <input id="fileupload" type="file" accept="image/*" multiple />
+            <div class="upload-zone-content">
+              <svg class="upload-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p class="upload-zone-title">点击或拖拽图片到此处</p>
+              <p class="upload-zone-hint">JPG · PNG · SVG · GIF，支持多选</p>
+              <span class="upload-zone-paste-hint">也可以按 Ctrl+V 粘贴</span>
             </div>
-            <div class="result-thumb">
-              <img id="result-img" />
+          </div>
+
+          <!-- 分隔 -->
+          <div class="or-divider"><span>或粘贴 SVG</span></div>
+
+          <!-- SVG 文本输入 -->
+          <div class="textarea">
+            <textarea id="textarea" placeholder="粘贴 SVG 代码，或 data:image/svg+xml;base64,… 格式"></textarea>
+          </div>
+
+          <!-- 压缩选项（PNG/JPEG 时显示） -->
+          <div id="compress-section" class="compress-section" style="display:none">
+            <div class="compress-item">
+              <label for="max-width">最大宽度</label>
+              <input type="number" id="max-width" value="1200" min="100" max="9999" />
+              <span>px</span>
             </div>
+            <div class="compress-item">
+              <label for="quality">压缩质量</label>
+              <input type="range" id="quality" min="0.1" max="1" step="0.05" value="0.85" />
+              <span id="quality-display">85%</span>
+            </div>
+            <button type="button" id="recompress" style="display:none">重新压缩</button>
+          </div>
+
+          <!-- 操作栏 -->
+          <div class="action">
+            <button id="convert" disabled type="button">开始转换</button>
+            <label class="checkbox">
+              <input id="checkbox" type="checkbox" />
+              <span class="checkbox-label">双引号模式</span>
+            </label>
           </div>
         </div>
 
-        <!-- 批量结果 -->
-        <div id="result-batch" style="display:none">
-          <div class="batch-header">
-            <span id="batch-count"></span>
-            <button type="button" id="copy-all">复制全部</button>
-          </div>
-          <div id="batch-list"></div>
-        </div>
-      </section>
+        <!-- 右：输出面板 -->
+        <div class="tool-panel tool-panel--output">
 
-      <!-- 历史记录（最近 6 条） -->
+          <!-- 空状态 -->
+          <div class="output-empty" id="output-empty">
+            <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="52" height="52" rx="13" fill="currentColor" opacity="0.06"/>
+              <circle cx="26" cy="26" r="11" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5" opacity="0.3"/>
+              <path d="M26 21 L26 31 M21 26 L31 26" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity="0.3"/>
+            </svg>
+            <p>上传图片或粘贴 SVG<br>转换结果将显示在这里</p>
+          </div>
+
+          <!-- 结果区 -->
+          <section id="result" class="result">
+            <div class="result-format">
+              <button type="button" class="format-btn format-btn--active" data-format="raw">纯 Base64</button>
+              <button type="button" class="format-btn" data-format="css">CSS</button>
+              <button type="button" class="format-btn" data-format="html">HTML</button>
+            </div>
+
+            <div id="result-single">
+              <div class="result-wrapper">
+                <div class="result-textarea">
+                  <textarea readonly id="result-textarea"></textarea>
+                  <span class="result-copy-hint">点击复制</span>
+                </div>
+                <div class="result-thumb">
+                  <img id="result-img" />
+                </div>
+              </div>
+            </div>
+
+            <div id="result-batch" style="display:none">
+              <div class="batch-header">
+                <span id="batch-count"></span>
+                <button type="button" id="copy-all">复制全部</button>
+              </div>
+              <div id="batch-list"></div>
+            </div>
+          </section>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 历史记录 -->
+    <div class="history-outer">
       <section id="history-section" class="history-section" style="display:none">
         <div class="history-header">
           <span class="history-title">转换历史</span>
           <div class="history-actions">
             <button type="button" id="view-more-history" style="display:none">查看更多</button>
-            <button type="button" id="clear-history">清除历史</button>
+            <button type="button" id="clear-history">清除</button>
           </div>
         </div>
         <div id="history-list" class="history-list"></div>
       </section>
+    </div>
 
-    </main>
-  </section>
+    <!-- 页脚 -->
+    <footer class="site-footer">
+      <div class="site-footer-inner">🔒 所有转换在浏览器本地完成，图片不会上传至服务器</div>
+    </footer>
+
+  </div>
 
   <!-- 历史抽屉 -->
   <div id="drawer-overlay" class="drawer-overlay"></div>
@@ -127,23 +207,23 @@
       var currentFormat = 'raw'
       var currentBase64 = ''
       var batchResults = []
-      var pendingFiles = []   // 当前待重压的非 SVG 文件
+      var pendingFiles = []
 
-      var uploader      = document.getElementById('fileupload')
-      var textarea      = document.getElementById('textarea')
-      var convert       = document.getElementById('convert')
-      var checkbox      = document.getElementById('checkbox')
-      var resultSection = document.getElementById('result')
-      var resultImg     = document.getElementById('result-img')
+      var uploader       = document.getElementById('fileupload')
+      var textarea       = document.getElementById('textarea')
+      var convert        = document.getElementById('convert')
+      var checkbox       = document.getElementById('checkbox')
+      var resultSection  = document.getElementById('result')
+      var resultImg      = document.getElementById('result-img')
       var resultTextarea = document.getElementById('result-textarea')
       var toastContainer = document.getElementById('toast-container')
-      var formatBtns    = document.querySelectorAll('.format-btn')
-      var resultSingle  = document.getElementById('result-single')
-      var resultBatch   = document.getElementById('result-batch')
-      var batchList     = document.getElementById('batch-list')
-      var batchCount    = document.getElementById('batch-count')
-      var copyAllBtn    = document.getElementById('copy-all')
-      var historyList      = document.getElementById('history-list')
+      var formatBtns     = document.querySelectorAll('.format-btn')
+      var resultSingle   = document.getElementById('result-single')
+      var resultBatch    = document.getElementById('result-batch')
+      var batchList      = document.getElementById('batch-list')
+      var batchCount     = document.getElementById('batch-count')
+      var copyAllBtn     = document.getElementById('copy-all')
+      var historyList    = document.getElementById('history-list')
       var clearHistoryBtn  = document.getElementById('clear-history')
       var historySection   = document.getElementById('history-section')
       var viewMoreBtn      = document.getElementById('view-more-history')
@@ -152,12 +232,13 @@
       var drawerClose      = document.getElementById('drawer-close')
       var drawerList       = document.getElementById('drawer-list')
       var historySearch    = document.getElementById('history-search')
-      var themeToggle   = document.getElementById('theme-toggle')
-      var maxWidthInput = document.getElementById('max-width')
-      var qualityInput  = document.getElementById('quality')
-      var qualityDisplay = document.getElementById('quality-display')
-      var compressSection = document.getElementById('compress-section')
-      var recompressBtn   = document.getElementById('recompress')
+      var themeToggle      = document.getElementById('theme-toggle')
+      var maxWidthInput    = document.getElementById('max-width')
+      var qualityInput     = document.getElementById('quality')
+      var qualityDisplay   = document.getElementById('quality-display')
+      var compressSection  = document.getElementById('compress-section')
+      var recompressBtn    = document.getElementById('recompress')
+      var outputEmpty      = document.getElementById('output-empty')
 
       // ── Toast ────────────────────────────────────────────────
       function showToast(message, type) {
@@ -166,9 +247,7 @@
         toast.textContent = message
         toastContainer.appendChild(toast)
         requestAnimationFrame(function () {
-          requestAnimationFrame(function () {
-            toast.classList.add('toast--show')
-          })
+          requestAnimationFrame(function () { toast.classList.add('toast--show') })
         })
         setTimeout(function () {
           toast.classList.remove('toast--show')
@@ -184,9 +263,7 @@
         if (navigator.clipboard) {
           navigator.clipboard.writeText(text).then(function () {
             showToast('复制成功', 'success')
-          }).catch(function (err) {
-            fallbackCopy(text, err)
-          })
+          }).catch(function (err) { fallbackCopy(text, err) })
         } else {
           fallbackCopy(text, null)
         }
@@ -197,8 +274,7 @@
         tmp.value = text
         tmp.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none'
         document.body.appendChild(tmp)
-        tmp.focus()
-        tmp.select()
+        tmp.focus(); tmp.select()
         var ok = false
         try { ok = document.execCommand('copy') } catch (e) {}
         document.body.removeChild(tmp)
@@ -238,12 +314,11 @@
       }
 
       function saveToHistory(name, base64, mimeType) {
-        if (base64.length > 500 * 1024) return  // 跳过超大条目，避免超出 storage 限额
+        if (base64.length > 500 * 1024) return
         var history = loadHistory()
         history.unshift({ name: name, base64: base64, mimeType: mimeType, time: Date.now() })
         if (history.length > HISTORY_MAX) history = history.slice(0, HISTORY_MAX)
-        try { localStorage.setItem('base64history', JSON.stringify(history)) }
-        catch (e) { /* quota exceeded */ }
+        try { localStorage.setItem('base64history', JSON.stringify(history)) } catch (e) {}
         renderHistory()
       }
 
@@ -371,39 +446,28 @@
           var blobUrl = URL.createObjectURL(file)
           img.onload = function () {
             URL.revokeObjectURL(blobUrl)
-            var w = img.naturalWidth
-            var h = img.naturalHeight
-            if (w > maxWidth) {
-              h = Math.round(h * maxWidth / w)
-              w = maxWidth
-            }
+            var w = img.naturalWidth, h = img.naturalHeight
+            if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth }
             var canvas = document.createElement('canvas')
-            canvas.width  = w
-            canvas.height = h
+            canvas.width = w; canvas.height = h
             canvas.getContext('2d').drawImage(img, 0, 0, w, h)
             var type = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
             resolve(canvas.toDataURL(type, quality))
           }
-          img.onerror = function () {
-            URL.revokeObjectURL(blobUrl)
-            resolve(null)
-          }
+          img.onerror = function () { URL.revokeObjectURL(blobUrl); resolve(null) }
           img.src = blobUrl
         })
       }
 
       // ── Result UI ────────────────────────────────────────────
       function resultToggle(display) {
-        resultSection.style.display = display
+        var show = display !== 'none'
+        resultSection.style.display = show ? 'flex' : 'none'
+        outputEmpty.style.display   = show ? 'none' : 'flex'
       }
 
-      function convertDisabled(disabled) {
-        convert.disabled = disabled
-      }
-
-      function clearUploader() {
-        uploader.value = ''
-      }
+      function convertDisabled(disabled) { convert.disabled = disabled }
+      function clearUploader() { uploader.value = '' }
 
       function showSingleResult(base64, imgSrc) {
         currentBase64 = base64
@@ -485,8 +549,6 @@
       // ── SVG Conversion ───────────────────────────────────────
       function svgToBase64() {
         var input = textarea.value.trim()
-
-        // 支持粘贴 SVG Base64 Data URL，自动解码还原为原始 SVG
         var b64prefix = 'data:image/svg+xml;base64,'
         if (input.indexOf(b64prefix) === 0) {
           try {
@@ -497,11 +559,9 @@
             return
           }
         }
-
         compressSection.style.display = 'none'
         recompressBtn.style.display   = 'none'
         pendingFiles = []
-
         var res = ImageToBase64(input, { doubleQuote: checkbox.checked })
         var base64 = typeof res === 'string' ? res : res.input
         showSingleResult(base64, base64)
@@ -540,26 +600,20 @@
       // ── Batch File Transfer ───────────────────────────────────
       async function transferFiles(files) {
         if (!files || files.length === 0) return
-
-        var valid = []
-        var hasInvalid = false
+        var valid = [], hasInvalid = false
         for (var k = 0; k < files.length; k++) {
           if (supportType.indexOf(files[k].type) !== -1) {
             valid.push(files[k])
             if (files[k].size > FILE_SIZE_WARNING) {
               showToast(files[k].name + ' 较大（' + (files[k].size / 1024 / 1024).toFixed(1) + 'MB）', 'warning')
             }
-          } else {
-            hasInvalid = true
-          }
+          } else { hasInvalid = true }
         }
         if (hasInvalid) showToast('已跳过不支持的文件格式', 'error')
         if (valid.length === 0) { clearUploader(); return }
 
-        // 单个 SVG：填入 textarea 走文本转换流程
         if (valid.length === 1 && valid[0].type === 'image/svg+xml') {
-          var fileText = await valid[0].text()
-          textarea.value = fileText
+          textarea.value = await valid[0].text()
           convertDisabled(false)
           compressSection.style.display = 'none'
           svgToBase64()
@@ -567,14 +621,13 @@
           return
         }
 
-        // 有可压缩图片时显示压缩选项，并记录 pendingFiles 以供重新压缩
         var hasCompressable = valid.some(function (f) {
           return f.type === 'image/png' || f.type === 'image/jpeg'
         })
         compressSection.style.display = hasCompressable ? 'flex' : 'none'
         recompressBtn.style.display   = hasCompressable ? 'inline-block' : 'none'
         pendingFiles = valid
-        textarea.value = ''   // 清空 textarea，防止 convert 按钮误触 SVG 流程
+        textarea.value = ''
         convertDisabled(false)
 
         var results = []
@@ -587,13 +640,11 @@
             showToast(valid[m].name + ' 处理失败', 'error')
           }
         }
-
         if (results.length === 1) {
           showSingleResult(results[0].base64, results[0].imgSrc)
         } else if (results.length > 1) {
           showBatchResults(results)
         }
-
         clearUploader()
       }
 
@@ -630,11 +681,9 @@
       textarea.addEventListener('focus', function () {
         textarea.parentElement.classList.add('focus')
       })
-
       textarea.addEventListener('blur', function () {
         textarea.parentElement.classList.remove('focus')
       })
-
       textarea.addEventListener('input', function (event) {
         if (event.target.value) {
           convertDisabled(false)
@@ -665,8 +714,7 @@
       document.addEventListener('drop', function (event) {
         transferFiles(event.dataTransfer.files)
       })
-
-      document.ondrop    = function (event) { event.preventDefault() }
+      document.ondrop     = function (event) { event.preventDefault() }
       document.ondragover = function (event) { event.preventDefault() }
     }
   </script>
