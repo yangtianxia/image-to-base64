@@ -1228,3 +1228,23 @@ button.history-copy-btn:hover {
   vertical-align: middle;
   transition: color 0.3s, border-color 0.3s;
 }
+
+/* ── Batch collapse toggle ──────────────────────────────────── */
+.batch-toggle-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 0;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-primary);
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.15s, color 0.15s;
+}
+.batch-toggle-btn:hover {
+  background: var(--primary-muted);
+}

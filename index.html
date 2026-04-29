@@ -281,6 +281,8 @@
       var supportType = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/webp']
       var FILE_SIZE_WARNING = 5 * 1024 * 1024
       var HISTORY_PREVIEW = 6
+      var MAX_FILES = 10
+      var BATCH_PREVIEW = 3
       var currentFormat = 'raw', currentBase64 = '', batchResults = [], pendingFiles = []
 
       // ── DOM refs ─────────────────────────────────────────────
@@ -572,9 +574,11 @@
         resultSingle.style.display = 'block'; resultBatch.style.display = 'none'
         resultToggle('block')
       }
-      function renderBatchList() {
+      function renderBatchList(showAll) {
         batchList.innerHTML = ''
-        batchResults.forEach(function (item) {
+        var items = (showAll || batchResults.length <= BATCH_PREVIEW)
+          ? batchResults : batchResults.slice(0, BATCH_PREVIEW)
+        items.forEach(function (item) {
           var card = document.createElement('div'); card.className = 'batch-item'
           var thumb = document.createElement('img'); thumb.className = 'batch-thumb'
           thumb.src = item.imgSrc || item.base64; thumb.alt = item.name
@@ -587,6 +591,18 @@
           info.appendChild(nameEl); info.appendChild(output)
           card.appendChild(thumb); card.appendChild(info); batchList.appendChild(card)
         })
+        if (batchResults.length > BATCH_PREVIEW) {
+          var btn = document.createElement('button')
+          btn.type = 'button'; btn.className = 'batch-toggle-btn'
+          if (showAll) {
+            btn.textContent = '收起'
+            btn.addEventListener('click', function () { renderBatchList(false) })
+          } else {
+            btn.textContent = '展开全部 ' + batchResults.length + ' 个结果 ↓'
+            btn.addEventListener('click', function () { renderBatchList(true) })
+          }
+          batchList.appendChild(btn)
+        }
       }
       function showBatchResults(items) {
         batchResults = items; batchCount.textContent = '共 ' + items.length + ' 个文件'
@@ -671,11 +687,16 @@
       async function transferFiles(files) {
         if (!files || files.length === 0) return
         var valid = [], hasInvalid = false
-        for (var k = 0; k < files.length; k++) {
-          if (supportType.indexOf(files[k].type) !== -1) {
-            valid.push(files[k])
-            if (files[k].size > FILE_SIZE_WARNING)
-              showToast(files[k].name + ' 较大（' + (files[k].size / 1024 / 1024).toFixed(1) + 'MB）', 'warning')
+        var allFiles = Array.prototype.slice.call(files)
+        if (allFiles.length > MAX_FILES) {
+          showToast('最多支持 ' + MAX_FILES + ' 张，已忽略超出部分', 'warning')
+          allFiles = allFiles.slice(0, MAX_FILES)
+        }
+        for (var k = 0; k < allFiles.length; k++) {
+          if (supportType.indexOf(allFiles[k].type) !== -1) {
+            valid.push(allFiles[k])
+            if (allFiles[k].size > FILE_SIZE_WARNING)
+              showToast(allFiles[k].name + ' 较大（' + (allFiles[k].size / 1024 / 1024).toFixed(1) + 'MB）', 'warning')
           } else { hasInvalid = true }
         }
         if (hasInvalid) showToast('已跳过不支持的文件格式', 'error')
@@ -731,6 +752,42 @@
           if (textarea.value.indexOf('<svg') === -1)
             showToast('内容不含 <svg 标签，请确认格式', 'warning')
           svgToBase64()
+        }
+      })
+
+      // ── Textarea smart paste ─────────────────────────────────
+      textarea.addEventListener('paste', function (e) {
+        var text = (e.clipboardData || window.clipboardData).getData('text')
+        if (!text || text.indexOf('data:image/') !== 0) return // 非 data URL，走默认粘贴
+        e.preventDefault()
+        e.stopPropagation()
+
+        var SVG_B64 = 'data:image/svg+xml;base64,'
+        var SVG_URI = 'data:image/svg+xml,'
+        var IMG_B64 = /^data:image\/(png|jpe?g|gif|webp);base64,/i
+
+        if (text.indexOf(SVG_B64) === 0) {
+          // SVG Base64 → 解码为 SVG 标签
+          try {
+            textarea.value = atob(text.slice(SVG_B64.length))
+            textarea.dispatchEvent(new Event('input'))
+            showToast('已解码为 SVG 代码', 'success')
+          } catch (err) { showToast('SVG Base64 解码失败', 'error') }
+        } else if (text.indexOf(SVG_URI) === 0) {
+          // SVG URI 编码 → 解码为 SVG 标签
+          try {
+            textarea.value = decodeURIComponent(text.slice(SVG_URI.length))
+            textarea.dispatchEvent(new Event('input'))
+            showToast('已解码为 SVG 代码', 'success')
+          } catch (err) { showToast('SVG URI 解码失败', 'error') }
+        } else if (IMG_B64.test(text)) {
+          // 非 SVG Base64 图片 → 直接作为转换结果显示
+          var mime = text.match(/^data:image\/([^;]+)/i)[1].toUpperCase()
+          textarea.value = ''
+          showSingleResult(text, text)
+          showToast('已识别 ' + mime + ' Base64，结果已显示', 'success')
+        } else {
+          showToast('不支持的数据格式，请粘贴 SVG 代码或标准 Base64 图片', 'error')
         }
       })
 
