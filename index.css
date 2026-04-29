@@ -1066,3 +1066,165 @@ button#drawer-close:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Upload file preview ────────────────────────────────────── */
+.upload-zone--has-files .upload-icon,
+.upload-zone--has-files .upload-zone-title,
+.upload-zone--has-files .upload-zone-paste-hint { display: none; }
+
+.upload-zone--has-files .upload-zone-hint {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.upload-zone--has-files .upload-zone-content {
+  padding: 10px 14px;
+}
+
+.file-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.file-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 5px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  min-width: 0;
+  max-width: 100%;
+  transition: border-color 0.15s, background-color 0.3s;
+}
+
+.file-card:hover { border-color: var(--border-primary); }
+
+.file-card-thumb {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: var(--surface-alt);
+  flex-shrink: 0;
+}
+
+.file-card-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.3s;
+}
+
+.file-card-remove {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: var(--text-muted);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 18px;
+  text-align: center;
+  padding: 0;
+  transition: background-color 0.15s;
+}
+
+.file-card-remove:hover { background: #ef4444; }
+
+/* ── History card (updated layout) ─────────────────────────── */
+.history-item { align-items: flex-start; }
+
+.history-info {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.history-info-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.history-name { flex: 1; }
+
+.history-params {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.3s, background-color 0.3s, border-color 0.3s;
+}
+
+.history-delete-btn {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  line-height: 1.6;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.history-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.history-copy-btns {
+  display: flex;
+  gap: 4px;
+}
+
+button.history-copy-btn {
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--primary-muted);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid var(--border-primary);
+  cursor: pointer;
+  line-height: 1.6;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+button.history-copy-btn:hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* ── Storage indicator ──────────────────────────────────────── */
+.storage-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  margin-left: 8px;
+  vertical-align: middle;
+  transition: color 0.3s, border-color 0.3s;
+}
