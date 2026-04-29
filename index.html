@@ -120,16 +120,24 @@
           </div>
 
           <section id="result" class="result">
-            <div class="result-format">
+            <div id="result-format-svg" class="result-format-svg" style="display:none">
+              <span class="svg-tag">SVG</span>
+              <span class="svg-format-label">HTML img 标签</span>
+            </div>
+            <div id="result-format-tabs" class="result-format">
               <button type="button" class="format-btn format-btn--active" data-format="raw">纯 Base64</button>
               <button type="button" class="format-btn" data-format="css">CSS</button>
               <button type="button" class="format-btn" data-format="html">HTML</button>
+            </div>
+            <div id="result-meta" class="result-meta" style="display:none">
+              <span id="result-type-badge" class="result-type-badge"></span>
+              <span id="result-size-display" class="result-size-display"></span>
             </div>
             <div id="result-single">
               <div class="result-wrapper">
                 <div class="result-textarea">
                   <textarea readonly id="result-textarea"></textarea>
-                  <span class="result-copy-hint">点击复制</span>
+                  <button type="button" class="result-copy-btn" id="result-copy-btn">复制</button>
                 </div>
                 <div class="result-thumb"><img id="result-img" /></div>
               </div>
@@ -137,7 +145,6 @@
             <div id="result-batch" style="display:none">
               <div class="batch-header">
                 <span id="batch-count"></span>
-                <button type="button" id="copy-all">复制全部</button>
               </div>
               <div id="batch-list"></div>
             </div>
@@ -283,7 +290,7 @@
       var HISTORY_PREVIEW = 6
       var MAX_FILES = 10
       var BATCH_PREVIEW = 3
-      var currentFormat = 'raw', currentBase64 = '', batchResults = [], pendingFiles = []
+      var currentFormat = 'raw', currentBase64 = '', currentMime = '', batchResults = [], pendingFiles = []
 
       // ── DOM refs ─────────────────────────────────────────────
       var uploader        = document.getElementById('fileupload')
@@ -299,7 +306,12 @@
       var resultBatch     = document.getElementById('result-batch')
       var batchList       = document.getElementById('batch-list')
       var batchCount      = document.getElementById('batch-count')
-      var copyAllBtn      = document.getElementById('copy-all')
+      var resultFormatTabs  = document.getElementById('result-format-tabs')
+      var resultFormatSvg   = document.getElementById('result-format-svg')
+      var resultMeta        = document.getElementById('result-meta')
+      var resultTypeBadge   = document.getElementById('result-type-badge')
+      var resultSizeDisplay = document.getElementById('result-size-display')
+      var resultCopyBtn     = document.getElementById('result-copy-btn')
       var historyList     = document.getElementById('history-list')
       var clearHistoryBtn = document.getElementById('clear-history')
       var historySection  = document.getElementById('history-section')
@@ -358,6 +370,13 @@
         if (format === 'css')  return 'background-image: url("' + base64 + '");'
         if (format === 'html') return '<img src="' + base64 + '" alt="" />'
         return base64
+      }
+      function calcBase64Size(base64) {
+        var data = base64.replace(/^data:[^;]+;base64,/, '')
+        var bytes = Math.round(data.length * 3 / 4)
+        return bytes < 1024 ? bytes + ' B'
+          : bytes < 1024 * 1024 ? (bytes / 1024).toFixed(1) + ' KB'
+          : (bytes / 1024 / 1024).toFixed(2) + ' MB'
       }
 
       // ── Dark Mode ────────────────────────────────────────────
@@ -567,11 +586,23 @@
       function convertDisabled(d) { convert.disabled = d }
       function clearUploader() { uploader.value = '' }
 
-      function showSingleResult(base64, imgSrc) {
-        currentBase64 = base64
+      function showSingleResult(base64, imgSrc, mime) {
+        currentBase64 = base64; currentMime = mime || ''
         resultTextarea.value = getFormattedOutput(base64, currentFormat)
         resultImg.src = imgSrc || base64
         resultSingle.style.display = 'block'; resultBatch.style.display = 'none'
+        var isSvg = currentMime === 'image/svg+xml'
+        resultFormatSvg.style.display  = isSvg ? 'flex' : 'none'
+        resultFormatTabs.style.display = isSvg ? 'none' : 'flex'
+        if (mime) {
+          var ext = mime.split('/')[1].replace('jpeg', 'jpg').toUpperCase()
+          resultTypeBadge.textContent = ext
+          resultTypeBadge.className = 'result-type-badge result-type-badge--' + mime.split('/')[1].toLowerCase()
+          resultSizeDisplay.textContent = calcBase64Size(base64)
+          resultMeta.style.display = 'flex'
+        } else {
+          resultMeta.style.display = 'none'
+        }
         resultToggle('block')
       }
       function renderBatchList(showAll) {
@@ -620,10 +651,7 @@
           if (batchResults.length > 0) renderBatchList()
         })
       }
-      copyAllBtn.addEventListener('click', function () {
-        copyText(batchResults.map(function (x) { return getFormattedOutput(x.base64, currentFormat) }).join('\n\n'))
-      })
-      resultTextarea.addEventListener('click', function () {
+      resultCopyBtn.addEventListener('click', function () {
         if (resultTextarea.value) copyText(resultTextarea.value)
       })
 
@@ -679,7 +707,7 @@
         compressSection.style.display = 'none'; pendingFiles = []
         var res = ImageToBase64(input, { doubleQuote: checkbox.checked })
         var base64 = typeof res === 'string' ? res : res.input
-        showSingleResult(base64, base64)
+        showSingleResult(base64, base64, 'image/svg+xml')
         saveToHistory('SVG', base64, 'image/svg+xml', { doubleQuote: checkbox.checked })
       }
 
@@ -709,20 +737,25 @@
           svgToBase64(); clearUploader(); return
         }
 
-        // 非 SVG：记录 pendingFiles，显示预览，不自动存历史
-        var hasComp = valid.some(function (f) { return f.type === 'image/png' || f.type === 'image/jpeg' })
+        // 非 SVG：记录 pendingFiles（累积，不替换），显示预览，不自动存历史
+        var combined = pendingFiles.concat(valid)
+        if (combined.length > MAX_FILES) {
+          showToast('最多支持 ' + MAX_FILES + ' 张，已忽略超出部分', 'warning')
+          combined = combined.slice(0, MAX_FILES)
+        }
+        pendingFiles = combined; textarea.value = ''
+        var hasComp = pendingFiles.some(function (f) { return f.type === 'image/png' || f.type === 'image/jpeg' })
         compressSection.style.display = hasComp ? 'flex' : 'none'
-        pendingFiles = valid; textarea.value = ''
         convertDisabled(false); renderFilePreview()
 
         // 自动预览转换结果（不存历史）
         var results = []
-        for (var m = 0; m < valid.length; m++) {
-          var res = await processFile(valid[m])
+        for (var m = 0; m < pendingFiles.length; m++) {
+          var res = await processFile(pendingFiles[m])
           if (res) results.push(res)
-          else showToast(valid[m].name + ' 处理失败', 'error')
+          else showToast(pendingFiles[m].name + ' 处理失败', 'error')
         }
-        if (results.length === 1)      showSingleResult(results[0].base64, results[0].imgSrc)
+        if (results.length === 1)      showSingleResult(results[0].base64, results[0].imgSrc, pendingFiles[0].type)
         else if (results.length > 1)   showBatchResults(results)
         clearUploader()
       }
@@ -741,7 +774,7 @@
             if (res) results.push(res)
           }
           if (results.length === 1) {
-            showSingleResult(results[0].base64, results[0].imgSrc)
+            showSingleResult(results[0].base64, results[0].imgSrc, pendingFiles[0].type)
             await saveToHistory(results[0].name, results[0].base64, pendingFiles[0].type, params)
           } else if (results.length > 1) {
             showBatchResults(results)
@@ -782,10 +815,10 @@
           } catch (err) { showToast('SVG URI 解码失败', 'error') }
         } else if (IMG_B64.test(text)) {
           // 非 SVG Base64 图片 → 直接作为转换结果显示
-          var mime = text.match(/^data:image\/([^;]+)/i)[1].toUpperCase()
+          var mimeExt = text.match(/^data:image\/([^;]+)/i)[1]
           textarea.value = ''
-          showSingleResult(text, text)
-          showToast('已识别 ' + mime + ' Base64，结果已显示', 'success')
+          showSingleResult(text, text, 'image/' + mimeExt)
+          showToast('已识别 ' + mimeExt.toUpperCase() + ' Base64，结果已显示', 'success')
         } else {
           showToast('不支持的数据格式，请粘贴 SVG 代码或标准 Base64 图片', 'error')
         }
