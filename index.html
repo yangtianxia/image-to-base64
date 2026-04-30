@@ -130,8 +130,7 @@
 
           <section id="result" class="result">
             <div id="result-format-svg" class="result-format-svg" style="display:none">
-              <span class="svg-tag">SVG</span>
-              <span class="svg-format-label">HTML img 标签</span>
+              <span class="svg-format-label">输出格式：HTML img 标签</span>
             </div>
             <div id="result-format-tabs" class="result-format">
               <button type="button" class="format-btn format-btn--active" data-format="raw">纯 Base64</button>
@@ -695,14 +694,15 @@
       function convertDisabled(d) { convert.disabled = d }
       function clearUploader() { uploader.value = '' }
 
-      function showSingleResult(base64, imgSrc, mime) {
+      function showSingleResult(base64, imgSrc, mime, svgTagOnly) {
         currentBase64 = base64; currentMime = mime || ''
-        resultTextarea.value = getFormattedOutput(base64, currentFormat)
+        var isSvg = currentMime === 'image/svg+xml'
+        var tagOnly = isSvg && !!svgTagOnly
+        resultTextarea.value = getFormattedOutput(base64, tagOnly ? 'html' : currentFormat)
         resultImg.src = imgSrc || base64
         resultSingle.style.display = 'block'; resultBatch.style.display = 'none'
-        var isSvg = currentMime === 'image/svg+xml'
-        resultFormatSvg.style.display  = isSvg ? 'flex' : 'none'
-        resultFormatTabs.style.display = isSvg ? 'none' : 'flex'
+        resultFormatSvg.style.display  = tagOnly ? 'flex' : 'none'
+        resultFormatTabs.style.display = tagOnly ? 'none' : 'flex'
         if (mime) {
           var ext = mimeToExt(mime)
           resultTypeBadge.textContent = ext
@@ -774,7 +774,7 @@
         if (tab === 'upload') {
           textarea.value = ''
           updateParamsVisibility(pendingFiles.length ? 'image' : 'none')
-          if (!pendingFiles.length) { convertDisabled(true); resultToggle('none') }
+          if (!pendingFiles.length) { convertDisabled(true) }
         } else {
           pendingFiles = []; renderFilePreview()
           updateParamsVisibility(textarea.value ? 'svg' : 'none')
@@ -854,14 +854,15 @@
       function svgToBase64() {
         var input = textarea.value.trim()
         var b64pre = 'data:image/svg+xml;base64,'
-        if (input.indexOf(b64pre) === 0) {
+        var isBase64Input = input.indexOf(b64pre) === 0
+        if (isBase64Input) {
           try { input = atob(input.slice(b64pre.length)); textarea.value = input }
           catch (e) { showToast('Base64 解码失败', 'error'); return }
         }
         pendingFiles = []
         var res = ImageToBase64(input, { doubleQuote: checkbox.checked })
         var base64 = typeof res === 'string' ? res : res.input
-        showSingleResult(base64, base64, 'image/svg+xml')
+        showSingleResult(base64, base64, 'image/svg+xml', isBase64Input)
         saveToHistory('SVG', null, 'image/svg+xml',
           { doubleQuote: checkbox.checked, convertedSize: calcBase64Size(base64) }, input)
       }
