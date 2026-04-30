@@ -1369,12 +1369,12 @@ button.history-copy-btn:hover {
 
 /* ── Usage section ───────────────────────────────────────────── */
 .usage-section { max-width: 960px; margin: 32px auto 0; padding: 0 20px; }
-.usage-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
+.usage-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 0; }
 .usage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
 .usage-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   padding: 16px;
   transition: border-color 0.3s, background 0.3s;
 }

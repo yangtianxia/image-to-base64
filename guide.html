@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>使用说明 - 图片转Base64</title>
+  <meta name="description" content="图片转Base64工具完整使用说明，涵盖上传方式、参数调整、输出格式、批量转换、转换历史等所有功能。">
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHJ4PSI2IiBmaWxsPSJ1cmwoI2cpIi8+PHJlY3QgeD0iNiIgeT0iMTAiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiNmZmYiIHJ4PSIxIi8+PHBhdGggZD0iTTYgMTBMMTAgNkwxNCAxMFoiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNMTYgMTZMMjAgMTIuNUwyMCAxOS41WiIgZmlsbD0iI2ZmZiIvPjxyZWN0IHg9IjE4IiB5PSIxNSIgd2lkdGg9IjIuNSIgaGVpZ2h0PSIyIiBmaWxsPSIjZmZmIiByeD0iMC41Ii8+PHJlY3QgeD0iMjIiIHk9IjExLjUiIHdpZHRoPSI4IiBoZWlnaHQ9IjIiIGZpbGw9IiNmZmYiIHJ4PSIxIi8+PHJlY3QgeD0iMjIiIHk9IjE4IiB3aWR0aD0iOCIgaGVpZ2h0PSIyIiBmaWxsPSIjZmZmIiByeD0iMSIvPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMzIiIHkyPSIzMiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiM2MzY2ZjEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM0MzM4Y2EiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48L3N2Zz4=">
+  <link rel="stylesheet" type="text/css" href="./index.css">
+  <style>
+    .guide-wrap { max-width: 800px; margin: 0 auto; padding: 40px 20px 60px; }
+    .guide-back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
+      color: var(--text-secondary); text-decoration: none; margin-bottom: 32px;
+      transition: color 0.15s; }
+    .guide-back:hover { color: var(--primary); }
+    .guide-back svg { width: 14px; height: 14px; }
+    .guide-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .guide-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 40px; }
+    .guide-section { margin-bottom: 40px; }
+    .guide-section-title {
+      font-size: 15px; font-weight: 600; color: var(--text);
+      padding-bottom: 10px; border-bottom: 1px solid var(--border);
+      margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+      transition: border-color 0.3s;
+    }
+    .guide-section-title .num {
+      width: 22px; height: 22px; border-radius: 50%; background: var(--primary);
+      color: #fff; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .guide-p { font-size: 13px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 12px; }
+    .guide-p strong { color: var(--text); font-weight: 600; }
+    .guide-list { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 8px; }
+    .guide-list li { font-size: 13px; color: var(--text-secondary); line-height: 1.7;
+      padding-left: 16px; position: relative; }
+    .guide-list li::before { content: "·"; position: absolute; left: 0; color: var(--primary); font-weight: 700; }
+    .guide-list li strong { color: var(--text); font-weight: 600; }
+    .guide-tip {
+      background: var(--primary-muted); border: 1px solid var(--border-primary);
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      font-size: 12px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .guide-tip strong { color: var(--primary); font-weight: 600; }
+    .guide-code-block {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px 16px;
+      font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px;
+      color: var(--text); line-height: 1.7; overflow-x: auto; margin-bottom: 12px;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .guide-format-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .guide-format-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px;
+      transition: border-color 0.3s, background 0.3s;
+    }
+    .guide-format-card h4 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .guide-format-card p { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+    .guide-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px; }
+    .guide-table th { text-align: left; font-weight: 600; color: var(--text);
+      padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; }
+    .guide-table td { padding: 9px 12px; border-bottom: 1px solid var(--border);
+      color: var(--text-secondary); line-height: 1.5; transition: border-color 0.3s; }
+    .guide-table td:first-child { color: var(--text); font-weight: 500; }
+    .guide-table tr:last-child td { border-bottom: none; }
+    .type-badge-mini {
+      display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px;
+      border-radius: 4px; color: #fff; background: var(--primary); vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-brand">
+        <svg class="site-brand-icon" width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="7" fill="url(#lg)"/>
+          <rect x="6" y="10" width="8" height="8" fill="white" rx="1.5"/>
+          <path d="M6 10L10 6L14 10Z" fill="white"/>
+          <path d="M16 16L20 12.5L20 19.5Z" fill="white"/>
+          <rect x="18" y="15" width="2.5" height="2" fill="white" rx="0.5"/>
+          <rect x="22" y="11.5" width="8" height="2" fill="white" rx="1"/>
+          <rect x="22" y="18" width="8" height="2" fill="white" rx="1"/>
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#4338ca"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="site-brand-name">Image to Base64</span>
+      </div>
+      <div class="site-header-right">
+        <a class="github-link" target="_blank" rel="noreferrer" href="https://github.com/yangtianxia/image-to-base64">
+          <img src="https://img.shields.io/github/stars/yangtianxia/image-to-base64?style=social" alt="GitHub Stars" />
+        </a>
+        <button type="button" id="theme-toggle" class="theme-toggle" title="切换主题">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-content">
+    <div class="guide-wrap">
+      <a href="./index.html" class="guide-back">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 12L6 8L10 4"/>
+        </svg>
+        返回工具
+      </a>
+
+      <h1 class="guide-title">使用说明</h1>
+      <p class="guide-subtitle">完整介绍工具的所有功能，帮助你快速上手。</p>
+
+      <!-- 1. 输入方式 -->
+      <section class="guide-section">
+        <h2 class="guide-section-title"><span class="num">1</span>输入方式</h2>
+        <p class="guide-p">工具支持两种输入模式，通过顶部 Tab 切换：</p>
+        <ul class="guide-list">
+          <li><strong>上传图片</strong>：点击上传区选择文件，或将图片直接拖拽到页面任意位置，支持同时选择多张（最多 10 张）。</li>
+          <li><strong>粘贴截图</strong>：在「上传图片」Tab 下，按 <strong>Ctrl+V</strong>（Mac 为 Cmd+V）可直接粘贴剪贴板中的截图，无需先保存为文件。</li>
+          <li><strong>粘贴代码</strong>：切换到「粘贴代码」Tab，将 SVG 源码或已有的 SVG Data URL 粘贴到文本框，工具会自动识别并处理。</li>
+        </ul>
+        <div class="guide-tip">
+          <strong>提示：</strong>上传图片与粘贴代码是互斥模式，切换 Tab 时会自动清空另一侧的内容。
+        </div>
+      </section>
+
+      <!-- 2. 参数设置 -->
+      <section class="guide-section">
+        <h2 class="guide-section-title"><span class="num">2</span>参数设置</h2>
+        <p class="guide-p">上传图片后，参数区会根据文件类型自动显示对应的可调项：</p>
+
+        <div class="guide-format-cards">
+          <div class="guide-format-card">
+            <h4>最大宽度</h4>
+            <p>适用于 JPG / BMP / PNG。图片宽度超过此值时等比缩小，不超过则保持原尺寸。默认 1200px。</p>
+          </div>
+          <div class="guide-format-card">
+            <h4>压缩质量</h4>
+            <p>适用于 JPG / BMP（BMP 会压缩为 JPEG 输出）。范围 10%–100%，值越低体积越小但画质下降。默认 85%。</p>
+          </div>
+          <div class="guide-format-card">
+            <h4>双引号模式</h4>
+            <p>仅适用于 SVG。将输出结果中的单引号替换为双引号，适配对引号格式有要求的框架或模板场景。</p>
+          </div>
+        </div>
+
+        <div class="guide-tip">
+          <strong>注意：</strong>PNG 是无损格式，压缩质量参数对 PNG 无效，因此上传纯 PNG 文件时不会显示质量滑块，只有最大宽度可调。GIF / WebP / AVIF / ICO 不经 Canvas 处理，直接读取原始文件，无参数可调。
+        </div>
+      </section>
+
+      <!-- 3. 输出格式 -->
+      <section class="guide-section">
+        <h2 class="guide-section-title"><span class="num">3</span>输出格式</h2>
+        <p class="guide-p">转换完成后可选择三种输出格式，点击对应格式标签切换，再点击「复制」：</p>
+
+        <div class="guide-format-cards">
+          <div class="guide-format-card">
+            <h4>纯 Base64</h4>
+            <p>完整的 Data URL，格式为 <code>data:image/png;base64,...</code>，可直接用于 <code>src</code>、<code>url()</code> 等属性。</p>
+          </div>
+          <div class="guide-format-card">
+            <h4>CSS</h4>
+            <p>输出 <code>background-image: url("...");</code> 格式，复制后可直接粘贴到 CSS / WXSS 样式文件使用。</p>
+          </div>
+          <div class="guide-format-card">
+            <h4>HTML</h4>
+            <p>输出 <code>&lt;img src="..." /&gt;</code> 格式，复制后可直接粘贴到 HTML 模板或邮件代码中。</p>
+          </div>
+        </div>
+
+        <p class="guide-p">SVG 文件转换后仅显示一种输出格式（SVG Data URL），因为 SVG 有独立的处理逻辑，不经 Canvas 压缩。</p>
+      </section>
+
+      <!-- 4. 批量转换 -->
+      <section class="guide-section">
+        <h2 class="guide-section-title"><span class="num">4</span>批量转换</h2>
+        <p class="guide-p">一次上传多张图片后，点击「转换」会处理所有文件，结果以折叠列表展示，每条记录可单独展开查看和复制。</p>
+        <ul class="guide-list">
+          <li>每张图片的结果区域顶部显示文件名、格式 badge 和转换后的大小。</li>
+          <li>默认展开第一张结果，其余折叠，点击标题行可展开/收起。</li>
+          <li>参数（最大宽度、压缩质量）对本次上传的所有图片统一生效。</li>
+          <li>批量转换时，GIF / WebP / AVIF / ICO 等不可压缩格式直接读取，不受最大宽度参数影响。</li>
+        </ul>
+      </section>
+
+      <!-- 5. 转换历史 -->
+      <section class="guide-section">
+        <h2 class="guide-section-title"><span class="num">5</span>转换历史</h2>
+        <p class="guide-p">每次成功转换后，工具会自动将文件和配置保存到浏览器本地的 IndexedDB，关闭页面后仍可查看。</p>
+        <ul class="guide-list">
+          <li>同一个文件（按文件名 + 大小去重）最多记录 <strong>3 条</strong>最近的转换配置，相同配置不重复记录。</li>
+          <li>每条历史卡片显示原始文件的缩略图、文件名、格式、大小以及转换时的参数标签。</li>
+          <li>点击参数标签（如「85% · 1200px」）可一键还原当时的参数并立即重新转换，无需重新上传文件。</li>
+          <li>历史记录存储在当前浏览器，<strong>不跨设备</strong>，不同浏览器之间的历史相互独立。</li>
+        </ul>
+        <div class="guide-tip">
+          <strong>提示：</strong>历史记录直接存储原始 File 对象，不受文件大小限制，大图和手机拍摄的照片均可正常保存。
+        </div>
+      </section>
+
+      <!-- 6. 支持格式 -->
+      <section class="guide-section">
+        <h2 class="guide-section-title"><span class="num">6</span>支持格式</h2>
+        <table class="guide-table">
+          <thead>
+            <tr>
+              <th>格式</th>
+              <th>处理方式</th>
+              <th>可调参数</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="type-badge-mini" style="background:#6366f1">JPG</span></td>
+              <td>Canvas 压缩后输出</td>
+              <td>最大宽度、压缩质量</td>
+            </tr>
+            <tr>
+              <td><span class="type-badge-mini" style="background:#3b82f6">PNG</span></td>
+              <td>Canvas 缩放后输出（无损）</td>
+              <td>最大宽度</td>
+            </tr>
+            <tr>
+              <td><span class="type-badge-mini" style="background:#8b5cf6">SVG</span></td>
+              <td>直接读取，不经 Canvas</td>
+              <td>双引号模式</td>
+            </tr>
+            <tr>
+              <td><span class="type-badge-mini" style="background:#f97316">GIF</span></td>
+              <td>直接读取原始文件</td>
+              <td>无</td>
+            </tr>
+            <tr>
+              <td><span class="type-badge-mini" style="background:#06b6d4">WebP</span></td>
+              <td>直接读取原始文件</td>
+              <td>无</td>
+            </tr>
+            <tr>
+              <td><span class="type-badge-mini" style="background:#10b981">AVIF</span></td>
+              <td>直接读取原始文件</td>
+              <td>无</td>
+            </tr>
+            <tr>
+              <td><span class="type-badge-mini" style="background:#ef4444">BMP</span></td>
+              <td>Canvas 压缩，输出为 JPEG</td>
+              <td>最大宽度、压缩质量</td>
+            </tr>
+            <tr>
+              <td><span class="type-badge-mini" style="background:#6b7280">ICO</span></td>
+              <td>直接读取原始文件</td>
+              <td>无</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      © 2025 <a href="https://github.com/yangtianxia" target="_blank" rel="noreferrer" style="color:inherit;text-decoration:none;">yangtianxia</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/yangtianxia/image-to-base64" target="_blank" rel="noreferrer" style="color:inherit;text-decoration:none;">GitHub</a>
+      &nbsp;·&nbsp; MIT License
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var btn = document.getElementById('theme-toggle')
+      var saved = localStorage.getItem('theme')
+      if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        btn.textContent = '☀️'
+      }
+      btn.addEventListener('click', function () {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+        document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark')
+        btn.textContent = isDark ? '🌙' : '☀️'
+        localStorage.setItem('theme', isDark ? 'light' : 'dark')
+      })
+    })()
+  </script>
+</body>
+</html>
