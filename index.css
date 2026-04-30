@@ -1359,3 +1359,25 @@ button.history-copy-btn:hover {
 .compress-item#double-quote-item {
   display: none;
 }
+
+/* ── Result type badge colors ────────────────────────────────── */
+.result-type-badge--avif { background: #10b981; }
+.result-type-badge--bmp  { background: #ef4444; }
+.result-type-badge--ico  { background: #6b7280; }
+.result-type-badge--gif  { background: #f97316; }
+.result-type-badge--webp { background: #06b6d4; }
+
+/* ── Usage section ───────────────────────────────────────────── */
+.usage-section { max-width: 960px; margin: 32px auto 0; padding: 0 20px; }
+.usage-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
+.usage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.usage-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  transition: border-color 0.3s, background 0.3s;
+}
+.usage-card-icon { font-size: 22px; margin-bottom: 8px; }
+.usage-card h3 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.usage-card p { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }

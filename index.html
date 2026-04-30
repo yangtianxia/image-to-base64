@@ -51,6 +51,8 @@
         <div class="tool-header-badges">
           <span class="badge">JPG</span><span class="badge">PNG</span>
           <span class="badge">SVG</span><span class="badge">GIF</span>
+          <span class="badge">WebP</span><span class="badge">AVIF</span>
+          <span class="badge">BMP</span><span class="badge">ICO</span>
         </div>
       </div>
 
@@ -75,7 +77,7 @@
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
                 <p class="upload-zone-title">点击或拖拽图片到此处</p>
-                <p class="upload-zone-hint">JPG · PNG · SVG · GIF，支持多选</p>
+                <p class="upload-zone-hint">JPG · PNG · SVG · GIF · WebP · AVIF · BMP · ICO，支持多选</p>
                 <span class="upload-zone-paste-hint">也可以按 Ctrl+V 粘贴</span>
               </div>
             </div>
@@ -173,6 +175,42 @@
         <div id="history-list" class="history-list"></div>
       </section>
     </div>
+
+    <section class="usage-section">
+      <h2 class="usage-title">使用说明</h2>
+      <div class="usage-grid">
+        <div class="usage-card">
+          <div class="usage-card-icon">⬆️</div>
+          <h3>上传图片</h3>
+          <p>点击上传区或拖拽图片到页面，支持批量选择（最多 10 张）。也可按 Ctrl+V 直接粘贴截图。</p>
+        </div>
+        <div class="usage-card">
+          <div class="usage-card-icon">✏️</div>
+          <h3>粘贴 SVG 代码</h3>
+          <p>切换到「粘贴代码」Tab，直接粘贴 SVG 源码或 Base64 格式的 SVG Data URL。</p>
+        </div>
+        <div class="usage-card">
+          <div class="usage-card-icon">⚙️</div>
+          <h3>调整参数</h3>
+          <p>JPG/BMP 可设置最大宽度与压缩质量；PNG 仅支持缩放；SVG 支持双引号模式。</p>
+        </div>
+        <div class="usage-card">
+          <div class="usage-card-icon">📋</div>
+          <h3>复制结果</h3>
+          <p>选择输出格式（纯 Base64 / CSS / HTML），点击「复制」按钮即可使用。</p>
+        </div>
+        <div class="usage-card">
+          <div class="usage-card-icon">🕘</div>
+          <h3>转换历史</h3>
+          <p>每次转换自动保存到本地 IndexedDB。点击历史卡片上的配置按钮可一键还原参数并重新转换。</p>
+        </div>
+        <div class="usage-card">
+          <div class="usage-card-icon">🔒</div>
+          <h3>完全本地</h3>
+          <p>所有转换在浏览器内完成，图片数据不会上传到任何服务器，安全可靠。</p>
+        </div>
+      </div>
+    </section>
 
     <footer class="site-footer">
       <div class="site-footer-inner">🔒 所有转换在浏览器本地完成，图片不会上传至服务器</div>
@@ -278,7 +316,8 @@
       })()
 
       // ── 常量 & 状态 ──────────────────────────────────────────
-      var supportType = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/webp']
+      var supportType = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/webp',
+        'image/avif', 'image/bmp', 'image/x-icon', 'image/vnd.microsoft.icon']
       var FILE_SIZE_WARNING = 5 * 1024 * 1024
       var HISTORY_PREVIEW = 6
       var MAX_FILES = 10
@@ -389,7 +428,7 @@
           doubleQuoteItem.style.display = 'flex'
         } else {
           var hasPng  = pendingFiles.some(function (f) { return f.type === 'image/png' })
-          var hasJpeg = pendingFiles.some(function (f) { return f.type === 'image/jpeg' })
+          var hasJpeg = pendingFiles.some(function (f) { return f.type === 'image/jpeg' || f.type === 'image/bmp' })
           compressSection.style.display = (hasPng || hasJpeg) ? 'flex' : 'none'
           maxWidthItem.style.display    = (hasPng || hasJpeg) ? 'flex' : 'none'
           qualityItem.style.display     = hasJpeg ? 'flex' : 'none'
@@ -413,6 +452,11 @@
         return bytes < 1024 ? bytes + ' B'
           : bytes < 1024 * 1024 ? (bytes / 1024).toFixed(1) + ' KB'
           : (bytes / 1024 / 1024).toFixed(2) + ' MB'
+      }
+
+      function mimeToExt(mime) {
+        var sub = (mime || '').split('/')[1] || ''
+        return sub.replace('jpeg', 'jpg').replace('x-icon', 'ico').replace('vnd.microsoft.icon', 'ico').toUpperCase()
       }
 
       function formatParamLabel(mimeType, p) {
@@ -487,7 +531,7 @@
         nameEl.className = 'history-name'
         nameEl.textContent = item.name; nameEl.title = item.name
 
-        var ext = item.mimeType ? item.mimeType.split('/')[1].replace('jpeg', 'jpg').toUpperCase() : ''
+        var ext = item.mimeType ? mimeToExt(item.mimeType) : ''
         var sizeStr = item.size ? formatFileSize(item.size) : (item.isText ? '文本' : '')
         var metaEl = document.createElement('span')
         metaEl.className = 'history-params'
@@ -616,7 +660,7 @@
 
       function processFile(file) {
         return new Promise(function (resolve) {
-          var canCompress = file.type === 'image/png' || file.type === 'image/jpeg'
+          var canCompress = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/bmp'
           if (canCompress) {
             compressImage(file).then(function (compressed) {
               if (compressed) resolve({ base64: compressed, imgSrc: compressed, name: file.name })
@@ -650,9 +694,9 @@
         resultFormatSvg.style.display  = isSvg ? 'flex' : 'none'
         resultFormatTabs.style.display = isSvg ? 'none' : 'flex'
         if (mime) {
-          var ext = mime.split('/')[1].replace('jpeg', 'jpg').toUpperCase()
+          var ext = mimeToExt(mime)
           resultTypeBadge.textContent = ext
-          resultTypeBadge.className = 'result-type-badge result-type-badge--' + mime.split('/')[1].toLowerCase()
+          resultTypeBadge.className = 'result-type-badge result-type-badge--' + ext.toLowerCase()
           resultSizeDisplay.textContent = calcBase64Size(base64)
           resultMeta.style.display = 'flex'
         } else {
