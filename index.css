@@ -429,6 +429,7 @@ button#recompress:hover {
 }
 
 button#convert {
+  width: 100%;
   padding: 9px 26px;
   border-radius: var(--radius-sm);
   background-color: var(--primary);
@@ -1368,7 +1369,7 @@ button.history-copy-btn:hover {
 .result-type-badge--webp { background: #06b6d4; }
 
 /* ── Usage section ───────────────────────────────────────────── */
-.usage-section { max-width: 960px; margin: 32px auto 0; padding: 0 20px; }
+.usage-section { margin: 32px auto 0; padding: 0 20px; }
 .usage-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 0; }
 .usage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
 .usage-card {
