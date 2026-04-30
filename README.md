@@ -1,103 +1,74 @@
 # image-to-base64
 
-将图片文件转换为 Base64 编码，方便直接插入 CSS（如 `background-image` / `mask-image`）或 HTML 中使用。([github.com](https://github.com/yangtianxia/image-to-base64))
+在线将图片转为 Base64 Data URL，全程本地处理，不上传服务器。
+
+[在线使用 →](https://yangtianxia.github.io/image-to-base64/)
 
 ---
 
-## 📌 功能介绍
+## 为什么用这个工具
 
-`image-to-base64` 是一个简单的 **图片转 Base64 工具**，主要用于：
-
-- 将本地图片转换为 Base64 字符串
-- 支持在 CSS 中快速使用 Base64 图片（如 `background-image`, `mask-image`）([github.com](https://github.com/yangtianxia/image-to-base64))
-
-该工具适合前端开发、样式调试、快速测试等场景。  
+- **隐私安全**：所有转换在浏览器内完成，图片不会离开你的设备
+- **批量支持**：一次最多上传 10 张图片，批量转换后可分别复制
+- **历史记录**：每次转换自动保存到本地 IndexedDB，下次打开仍可查看，支持一键复用参数重转
+- **多格式输出**：支持纯 Base64、CSS `background-image`、HTML `<img>` 三种格式，开箱即用
 
 ---
 
-## 🚀 特性
+## 支持格式
 
-- ✨ 将常见图片格式快速编码为 Base64  
-- ✨ 生成可直接在 CSS/HTML 中使用的 Data URI  
-- ✨ 前端兼容性好，无需服务器处理  
-- ✨ 释放对外部资源文件的依赖，提高小资源加载性能
-
----
-
-## 📌 使用说明
-
-### 🖼 在浏览器中打开
-
-1. 打开 `[image-to-base64](https://yangtianxia.github.io/image-to-base64/)`
-2. 拖放图片或使用文件选择控件加载图片  
-3. 自动生成 Base64 编码字符串  
-4. 复制用于 CSS/HTML
+| 格式 | MIME | 说明 |
+|------|------|------|
+| JPG | `image/jpeg` | 有损压缩，支持质量调节 |
+| PNG | `image/png` | 无损，支持最大宽度缩放 |
+| SVG | `image/svg+xml` | 矢量图，支持双引号模式 |
+| GIF | `image/gif` | 动图直接读取 |
+| WebP | `image/webp` | 现代格式，直接读取 |
+| AVIF | `image/avif` | 高压缩现代格式，直接读取 |
+| BMP | `image/bmp` | 位图，经 Canvas 压缩为 JPEG 输出 |
+| ICO | `image/x-icon` | favicon 常用格式，直接读取 |
 
 ---
 
-## 🛠 支持的输出用法
+## 主要功能
 
-以下示例说明如何将生成的 Base64 字符串嵌入到不同位置：
+- **上传 / 拖拽 / 粘贴**：支持点击选择、拖拽到页面、Ctrl+V 粘贴截图
+- **批量转换**：同时处理多张图片，结果可展开查看，支持折叠
+- **参数调整**
+  - JPG / BMP：最大宽度 + 压缩质量（0.1–1.0）
+  - PNG：最大宽度缩放（无损）
+  - SVG：双引号模式（将单引号替换为双引号，适配特定场景）
+- **粘贴 SVG 代码**：切换「粘贴代码」Tab，直接粘贴 SVG 源码或已有 Data URL
+- **多格式输出**：纯 Base64 / CSS `url(...)` / HTML `<img src="...">`
+- **本地历史**：基于 IndexedDB 存储，记录每个文件最近 3 次转换配置，支持一键重转
+- **暗色模式**：跟随系统自动切换
 
-### 🎨 在 CSS 中使用
+---
 
+## 快速开始
+
+1. 打开 [https://yangtianxia.github.io/image-to-base64/](https://yangtianxia.github.io/image-to-base64/)
+2. 拖拽图片或点击上传区选择文件
+3. 根据需要调整最大宽度和压缩质量
+4. 选择输出格式，点击「复制」
+
+---
+
+## 输出格式示例
+
+**纯 Base64**
+```
+data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...
+```
+
+**CSS**
 ```css
-.my-class {
-  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANS…");
+.icon {
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...");
 }
 ```
 
-或用于遮罩：
-
-```css
-.my-mask {
-  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0…");
-}
-```
-
----
-
-### 🖼 在 HTML 中使用
-
+**HTML**
 ```html
-<img src="data:image/jpeg;base64,/9j/4AAQSk…==" alt="base64 图像" />
+<img src="data:image/jpeg;base64,/9j/4AAQSkZJRgAB..." alt="" />
 ```
-
----
-
-## ❓ 为什么需要 Base64 图片？
-
-Base64 图片编码常用于：
-
-- 嵌入小图片资源减少网络请求
-- 在单文件组件或 Markdown 中嵌入图像
-- 在 CSS 中快速内联图像，无需外部资源
-- 编写示例 / 文档 / 快速原型样式
-
----
-
-## 📦 示例
-
-**从图片获得 Base64 字符串（伪代码）：**
-
-```javascript
-const fileInput = document.querySelector("input[type=file]");
-fileInput.addEventListener("change", e => {
-  const file = e.target.files[0];
-  const reader = new FileReader();
-  
-  reader.onload = () => {
-    const base64 = reader.result;
-    console.log(base64) // 输出 base64
-  };
-
-  reader.readAsDataURL(file); // 读取为 Data URI
-});
-```
-
----
-
-## 🧪 实践技巧
-
-💡 在 CSS 中使用 Base64 可以避免多次网络请求，但对于大图建议仍采用外部请求  
-💡 仅在需要“单文件打包”或快速原型测试时使用 Base64 图像
