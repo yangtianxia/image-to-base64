@@ -1003,6 +1003,9 @@ button#drawer-close:hover {
   flex: 1;
   overflow-y: auto;
   padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .drawer-group-title {
