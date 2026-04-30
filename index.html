@@ -130,7 +130,7 @@
 
           <section id="result" class="result">
             <div id="result-format-svg" class="result-format-svg" style="display:none">
-              <span class="svg-format-label">输出格式：HTML img 标签</span>
+              <span class="format-btn format-btn--active" style="cursor:default;pointer-events:none;">HTML img 标签</span>
             </div>
             <div id="result-format-tabs" class="result-format">
               <button type="button" class="format-btn format-btn--active" data-format="raw">纯 Base64</button>
@@ -966,12 +966,9 @@
         var IMG_B64 = /^data:image\/(png|jpe?g|gif|webp);base64,/i
 
         if (text.indexOf(SVG_B64) === 0) {
-          // SVG Base64 → 解码为 SVG 标签
-          try {
-            textarea.value = atob(text.slice(SVG_B64.length))
-            textarea.dispatchEvent(new Event('input'))
-            showToast('已解码为 SVG 代码', 'success')
-          } catch (err) { showToast('SVG Base64 解码失败', 'error') }
+          textarea.value = ''
+          showSingleResult(text, text, 'image/svg+xml', true)
+          showToast('已识别 SVG Base64，结果已显示', 'success')
         } else if (text.indexOf(SVG_URI) === 0) {
           // SVG URI 编码 → 解码为 SVG 标签
           try {
