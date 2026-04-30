@@ -459,12 +459,19 @@
         var parts = []
         if (mimeType === 'image/svg+xml') {
           parts.push(p.doubleQuote ? '双引号' : 'SVG')
-        } else {
+        } else if (mimeType === 'image/jpeg' || mimeType === 'image/bmp') {
           if (p.quality != null) parts.push(Math.round(p.quality * 100) + '%')
+          if (p.maxWidth)        parts.push(p.maxWidth + 'px')
+        } else if (mimeType === 'image/png') {
           if (p.maxWidth)        parts.push(p.maxWidth + 'px')
         }
         if (p.convertedSize) parts.push(p.convertedSize)
         return parts.join(' · ') || '默认'
+      }
+
+      function mimeHasCompressParams(mimeType) {
+        return mimeType === 'image/svg+xml' || mimeType === 'image/jpeg' ||
+          mimeType === 'image/bmp' || mimeType === 'image/png'
       }
 
       async function saveToHistory(name, fileOrNull, mimeType, params, textContent) {
@@ -549,10 +556,11 @@
         top.appendChild(nameEl); top.appendChild(metaEl)
         top.appendChild(timeEl); top.appendChild(delBtn)
 
-        // 底行：最近 3 条转换配置按钮
+        // 底行：最近 3 条转换配置按钮（仅有压缩参数的类型才显示）
         var btns = document.createElement('div')
         btns.className = 'history-copy-btns'
-        ;(item.recentParams || []).forEach(function (p, idx) {
+        var showBtns = mimeHasCompressParams(item.mimeType)
+        ;(showBtns ? (item.recentParams || []) : []).forEach(function (p, idx) {
           var btn = document.createElement('button')
           btn.type = 'button'; btn.className = 'history-copy-btn'
           btn.textContent = formatParamLabel(item.mimeType, p)
@@ -615,10 +623,12 @@
         renderDrawer(historySearch.value)
         historyDrawer.classList.add('drawer--open')
         drawerOverlay.classList.add('drawer-overlay--show')
+        document.body.style.overflow = 'hidden'
       }
       function closeDrawer() {
         historyDrawer.classList.remove('drawer--open')
         drawerOverlay.classList.remove('drawer-overlay--show')
+        document.body.style.overflow = ''
       }
 
       viewMoreBtn.addEventListener('click', openDrawer)
