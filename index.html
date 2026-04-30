@@ -465,7 +465,7 @@
 
       function mimeToExt(mime) {
         var sub = (mime || '').split('/')[1] || ''
-        return sub.replace('jpeg', 'jpg').replace('x-icon', 'ico').replace('vnd.microsoft.icon', 'ico').toUpperCase()
+        return (sub.replace('jpeg', 'jpg').replace('x-icon', 'ico').replace('vnd.microsoft.icon', 'ico').toUpperCase()) || '未知'
       }
 
       function formatParamLabel(mimeType, p) {
@@ -703,15 +703,11 @@
         resultSingle.style.display = 'block'; resultBatch.style.display = 'none'
         resultFormatSvg.style.display  = tagOnly ? 'flex' : 'none'
         resultFormatTabs.style.display = tagOnly ? 'none' : 'flex'
-        if (mime) {
-          var ext = mimeToExt(mime)
-          resultTypeBadge.textContent = ext
-          resultTypeBadge.className = 'result-type-badge result-type-badge--' + ext.toLowerCase()
-          resultSizeDisplay.textContent = calcBase64Size(base64)
-          resultMeta.style.display = 'flex'
-        } else {
-          resultMeta.style.display = 'none'
-        }
+        var ext = mimeToExt(mime)
+        resultTypeBadge.textContent = ext
+        resultTypeBadge.className = 'result-type-badge' + (ext !== '未知' ? ' result-type-badge--' + ext.toLowerCase() : '')
+        resultSizeDisplay.textContent = calcBase64Size(base64)
+        resultMeta.style.display = 'flex'
         resultToggle('block')
       }
       function renderBatchList(showAll) {
@@ -963,7 +959,7 @@
 
         var SVG_B64 = 'data:image/svg+xml;base64,'
         var SVG_URI = 'data:image/svg+xml,'
-        var IMG_B64 = /^data:image\/(png|jpe?g|gif|webp);base64,/i
+        var IMG_B64 = /^data:image\/[^;]+;base64,/i
 
         if (text.indexOf(SVG_B64) === 0) {
           textarea.value = ''
@@ -979,9 +975,10 @@
         } else if (IMG_B64.test(text)) {
           // 非 SVG Base64 图片 → 直接作为转换结果显示
           var mimeExt = text.match(/^data:image\/([^;]+)/i)[1]
+          var mime = 'image/' + mimeExt
           textarea.value = ''
-          showSingleResult(text, text, 'image/' + mimeExt)
-          showToast('已识别 ' + mimeExt.toUpperCase() + ' Base64，结果已显示', 'success')
+          showSingleResult(text, text, mime)
+          showToast('已识别 ' + mimeToExt(mime) + ' Base64，结果已显示', 'success')
         } else {
           showToast('不支持的数据格式，请粘贴 SVG 代码或标准 Base64 图片', 'error')
         }
