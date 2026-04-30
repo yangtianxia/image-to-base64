@@ -58,53 +58,60 @@
         <!-- 左：输入面板 -->
         <div class="tool-panel tool-panel--input">
 
-          <!-- 上传区 -->
-          <div class="upload-zone" id="upload-zone">
-            <input id="fileupload" type="file" accept="image/*" multiple />
-            <div class="upload-zone-content">
-              <svg class="upload-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              <p class="upload-zone-title">点击或拖拽图片到此处</p>
-              <p class="upload-zone-hint">JPG · PNG · SVG · GIF，支持多选</p>
-              <span class="upload-zone-paste-hint">也可以按 Ctrl+V 粘贴</span>
+          <!-- Tab 切换 -->
+          <div class="input-tabs">
+            <button type="button" class="input-tab input-tab--active" data-tab="upload">上传图片</button>
+            <button type="button" class="input-tab" data-tab="paste">粘贴代码</button>
+          </div>
+
+          <!-- Tab: 上传 -->
+          <div id="tab-upload" class="tab-pane">
+            <div class="upload-zone" id="upload-zone">
+              <input id="fileupload" type="file" accept="image/*" multiple />
+              <div class="upload-zone-content">
+                <svg class="upload-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p class="upload-zone-title">点击或拖拽图片到此处</p>
+                <p class="upload-zone-hint">JPG · PNG · SVG · GIF，支持多选</p>
+                <span class="upload-zone-paste-hint">也可以按 Ctrl+V 粘贴</span>
+              </div>
+            </div>
+            <div id="file-preview" class="file-preview" style="display:none"></div>
+          </div>
+
+          <!-- Tab: 粘贴 -->
+          <div id="tab-paste" class="tab-pane" style="display:none">
+            <div class="textarea">
+              <textarea id="textarea" placeholder="粘贴 SVG 代码，或 data:image/svg+xml;base64,… 格式"></textarea>
             </div>
           </div>
 
-          <!-- 已选文件预览 -->
-          <div id="file-preview" class="file-preview" style="display:none"></div>
-
-          <!-- 分隔 -->
-          <div class="or-divider"><span>或粘贴 SVG</span></div>
-
-          <!-- SVG 输入 -->
-          <div class="textarea">
-            <textarea id="textarea" placeholder="粘贴 SVG 代码，或 data:image/svg+xml;base64,… 格式"></textarea>
-          </div>
-
-          <!-- 压缩选项 -->
+          <!-- 参数区（按输入类型显示不同控件） -->
           <div id="compress-section" class="compress-section" style="display:none">
-            <div class="compress-item">
+            <div class="compress-item" id="max-width-item">
               <label for="max-width">最大宽度</label>
               <input type="number" id="max-width" value="1200" min="100" max="9999" />
               <span>px</span>
             </div>
-            <div class="compress-item">
+            <div class="compress-item" id="quality-item">
               <label for="quality">压缩质量</label>
               <input type="range" id="quality" min="0.1" max="1" step="0.05" value="0.85" />
               <span id="quality-display">85%</span>
+            </div>
+            <div class="compress-item" id="double-quote-item">
+              <label class="checkbox">
+                <input id="checkbox" type="checkbox" />
+                <span class="checkbox-label">双引号模式</span>
+              </label>
             </div>
           </div>
 
           <!-- 操作栏 -->
           <div class="action">
             <button id="convert" disabled type="button">开始转换</button>
-            <label class="checkbox">
-              <input id="checkbox" type="checkbox" />
-              <span class="checkbox-label">双引号模式</span>
-            </label>
           </div>
         </div>
 
@@ -325,11 +332,17 @@
       var maxWidthInput   = document.getElementById('max-width')
       var qualityInput    = document.getElementById('quality')
       var qualityDisplay  = document.getElementById('quality-display')
-      var compressSection = document.getElementById('compress-section')
-      var outputEmpty     = document.getElementById('output-empty')
-      var uploadZone      = document.getElementById('upload-zone')
-      var filePreview     = document.getElementById('file-preview')
-      var storageBadge    = document.getElementById('storage-badge')
+      var compressSection  = document.getElementById('compress-section')
+      var maxWidthItem     = document.getElementById('max-width-item')
+      var qualityItem      = document.getElementById('quality-item')
+      var doubleQuoteItem  = document.getElementById('double-quote-item')
+      var outputEmpty      = document.getElementById('output-empty')
+      var uploadZone       = document.getElementById('upload-zone')
+      var filePreview      = document.getElementById('file-preview')
+      var storageBadge     = document.getElementById('storage-badge')
+      var tabUpload        = document.getElementById('tab-upload')
+      var tabPaste         = document.getElementById('tab-paste')
+      var inputTabBtns     = document.querySelectorAll('.input-tab')
 
       // ── Toast ────────────────────────────────────────────────
       function showToast(msg, type) {
@@ -379,6 +392,25 @@
           : (bytes / 1024 / 1024).toFixed(2) + ' MB'
       }
 
+      // ── Params visibility ────────────────────────────────────
+      function updateParamsVisibility(mode) {
+        if (mode === 'none') {
+          compressSection.style.display = 'none'
+        } else if (mode === 'svg') {
+          compressSection.style.display = 'flex'
+          maxWidthItem.style.display    = 'none'
+          qualityItem.style.display     = 'none'
+          doubleQuoteItem.style.display = 'flex'
+        } else {
+          var hasPng  = pendingFiles.some(function (f) { return f.type === 'image/png' })
+          var hasJpeg = pendingFiles.some(function (f) { return f.type === 'image/jpeg' })
+          compressSection.style.display = (hasPng || hasJpeg) ? 'flex' : 'none'
+          maxWidthItem.style.display    = (hasPng || hasJpeg) ? 'flex' : 'none'
+          qualityItem.style.display     = hasJpeg ? 'flex' : 'none'
+          doubleQuoteItem.style.display = 'none'
+        }
+      }
+
       // ── Dark Mode ────────────────────────────────────────────
       function setTheme(dark) {
         document.body.classList.toggle('dark', dark)
@@ -391,12 +423,33 @@
       themeToggle.addEventListener('click', function () { setTheme(!document.body.classList.contains('dark')) })
 
       // ── History ──────────────────────────────────────────────
+      function makeThumbnail(base64, mimeType) {
+        return new Promise(function (resolve) {
+          if (mimeType === 'image/svg+xml') { resolve(base64); return }
+          var img = new Image(); img.src = base64
+          img.onload = function () {
+            var size = 60, canvas = document.createElement('canvas')
+            canvas.width = canvas.height = size
+            var ctx = canvas.getContext('2d')
+            var s = Math.min(img.width, img.height)
+            ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size)
+            resolve(canvas.toDataURL('image/jpeg', 0.6))
+          }
+          img.onerror = function () { resolve(base64) }
+        })
+      }
+
       async function saveToHistory(name, base64, mimeType, params) {
-        if (base64.length > 500 * 1024) return
         var item = {
           id: Date.now() + '_' + Math.random().toString(36).slice(2),
-          name: name, base64: base64, mimeType: mimeType,
-          time: Date.now(), params: params || {}
+          name: name, mimeType: mimeType, time: Date.now(), params: params || {}
+        }
+        if (HistoryDB.isIDB()) {
+          item.base64 = base64
+        } else {
+          if (base64.length > 500 * 1024) { showToast('图片较大，未存入历史', 'warning'); return }
+          item.base64 = await makeThumbnail(base64, mimeType)
+          item.thumbOnly = true
         }
         await HistoryDB.add(item)
         renderHistory()
@@ -455,18 +508,20 @@
         top.appendChild(nameEl); top.appendChild(paramsEl)
         top.appendChild(timeEl); top.appendChild(delBtn)
 
-        // 底行：三格式复制按钮
+        // 底行：三格式复制按钮（thumbOnly 降级时不显示）
         var btns = document.createElement('div')
         btns.className = 'history-copy-btns'
-        ;['raw', 'css', 'html'].forEach(function (fmt) {
-          var btn = document.createElement('button')
-          btn.type = 'button'; btn.className = 'history-copy-btn'
-          btn.textContent = fmt === 'raw' ? 'Base64' : fmt.toUpperCase()
-          ;(function (b64, f) {
-            btn.addEventListener('click', function () { copyText(getFormattedOutput(b64, f)) })
-          })(item.base64, fmt)
-          btns.appendChild(btn)
-        })
+        if (!item.thumbOnly) {
+          ;['raw', 'css', 'html'].forEach(function (fmt) {
+            var btn = document.createElement('button')
+            btn.type = 'button'; btn.className = 'history-copy-btn'
+            btn.textContent = fmt === 'raw' ? 'Base64' : fmt.toUpperCase()
+            ;(function (b64, f) {
+              btn.addEventListener('click', function () { copyText(getFormattedOutput(b64, f)) })
+            })(item.base64, fmt)
+            btns.appendChild(btn)
+          })
+        }
 
         info.appendChild(top); info.appendChild(btns)
         card.appendChild(thumb); card.appendChild(info)
@@ -655,6 +710,26 @@
         if (resultTextarea.value) copyText(resultTextarea.value)
       })
 
+      // ── Input tab switch ─────────────────────────────────────
+      for (var t = 0; t < inputTabBtns.length; t++) {
+        inputTabBtns[t].addEventListener('click', function (e) {
+          var tab = e.currentTarget.getAttribute('data-tab')
+          for (var k = 0; k < inputTabBtns.length; k++) inputTabBtns[k].classList.remove('input-tab--active')
+          e.currentTarget.classList.add('input-tab--active')
+          tabUpload.style.display = tab === 'upload' ? 'block' : 'none'
+          tabPaste.style.display  = tab === 'paste'  ? 'block' : 'none'
+          if (tab === 'upload') {
+            textarea.value = ''
+            updateParamsVisibility(pendingFiles.length ? 'image' : 'none')
+            if (!pendingFiles.length) { convertDisabled(true); resultToggle('none') }
+          } else {
+            pendingFiles = []; renderFilePreview()
+            updateParamsVisibility(textarea.value ? 'svg' : 'none')
+            convertDisabled(!textarea.value)
+          }
+        })
+      }
+
       // ── Upload file preview ───────────────────────────────────
       function renderFilePreview() {
         if (pendingFiles.length === 0) {
@@ -681,13 +756,9 @@
               renderFilePreview()
               if (pendingFiles.length === 0) {
                 convertDisabled(true); resultToggle('none')
-                var hasComp = false
-                compressSection.style.display = 'none'
+                updateParamsVisibility('none')
               } else {
-                var hasComp = pendingFiles.some(function (f) {
-                  return f.type === 'image/png' || f.type === 'image/jpeg'
-                })
-                compressSection.style.display = hasComp ? 'flex' : 'none'
+                updateParamsVisibility('image')
               }
             })
           })(idx)
@@ -704,7 +775,7 @@
           try { input = atob(input.slice(b64pre.length)); textarea.value = input }
           catch (e) { showToast('Base64 解码失败', 'error'); return }
         }
-        compressSection.style.display = 'none'; pendingFiles = []
+        pendingFiles = []
         var res = ImageToBase64(input, { doubleQuote: checkbox.checked })
         var base64 = typeof res === 'string' ? res : res.input
         showSingleResult(base64, base64, 'image/svg+xml')
@@ -733,7 +804,7 @@
         // 单个 SVG 直接转换并存历史
         if (valid.length === 1 && valid[0].type === 'image/svg+xml') {
           textarea.value = await valid[0].text()
-          convertDisabled(false); compressSection.style.display = 'none'
+          convertDisabled(false); updateParamsVisibility('svg')
           svgToBase64(); clearUploader(); return
         }
 
@@ -744,8 +815,7 @@
           combined = combined.slice(0, MAX_FILES)
         }
         pendingFiles = combined; textarea.value = ''
-        var hasComp = pendingFiles.some(function (f) { return f.type === 'image/png' || f.type === 'image/jpeg' })
-        compressSection.style.display = hasComp ? 'flex' : 'none'
+        updateParamsVisibility('image')
         convertDisabled(false); renderFilePreview()
 
         // 自动预览转换结果（不存历史）
@@ -829,8 +899,8 @@
       textarea.addEventListener('blur',  function () { textarea.parentElement.classList.remove('focus') })
       textarea.addEventListener('input', function (e) {
         if (e.target.value) {
-          convertDisabled(false); compressSection.style.display = 'none'; pendingFiles = []; renderFilePreview()
-        } else { resultToggle('none'); convertDisabled(true) }
+          convertDisabled(false); updateParamsVisibility('svg'); pendingFiles = []; renderFilePreview()
+        } else { resultToggle('none'); convertDisabled(true); updateParamsVisibility('none') }
       })
 
       // ── File & Drop events ────────────────────────────────────
