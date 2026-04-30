@@ -416,10 +416,14 @@
       }
 
       function formatParamLabel(mimeType, p) {
-        if (mimeType === 'image/svg+xml') return p.doubleQuote ? '双引号' : 'SVG'
         var parts = []
-        if (p.quality != null) parts.push(Math.round(p.quality * 100) + '%')
-        if (p.maxWidth)        parts.push(p.maxWidth + 'px')
+        if (mimeType === 'image/svg+xml') {
+          parts.push(p.doubleQuote ? '双引号' : 'SVG')
+        } else {
+          if (p.quality != null) parts.push(Math.round(p.quality * 100) + '%')
+          if (p.maxWidth)        parts.push(p.maxWidth + 'px')
+        }
+        if (p.convertedSize) parts.push(p.convertedSize)
         return parts.join(' · ') || '默认'
       }
 
@@ -433,7 +437,11 @@
         for (var i = 0; i < all.length; i++) { if (all[i].key === key) { existing = all[i]; break } }
         var newParam = Object.assign({}, params, { time: Date.now() })
         if (existing) {
-          existing.recentParams = [newParam].concat(existing.recentParams || []).slice(0, 3)
+          var rp = (existing.recentParams || []).filter(function (p) {
+            if (mimeType === 'image/svg+xml') return p.doubleQuote !== newParam.doubleQuote
+            return !(p.quality === newParam.quality && p.maxWidth === newParam.maxWidth)
+          })
+          existing.recentParams = [newParam].concat(rp).slice(0, 3)
           existing.time = Date.now()
           if (fileOrNull) existing.file = fileOrNull
           await HistoryDB.put(existing)
@@ -800,7 +808,8 @@
         var res = ImageToBase64(input, { doubleQuote: checkbox.checked })
         var base64 = typeof res === 'string' ? res : res.input
         showSingleResult(base64, base64, 'image/svg+xml')
-        saveToHistory('SVG', null, 'image/svg+xml', { doubleQuote: checkbox.checked }, input)
+        saveToHistory('SVG', null, 'image/svg+xml',
+          { doubleQuote: checkbox.checked, convertedSize: calcBase64Size(base64) }, input)
       }
 
       // ── Batch File Transfer（不自动存历史，等用户点转换）────
@@ -839,15 +848,24 @@
         updateParamsVisibility('image')
         convertDisabled(false); renderFilePreview()
 
-        // 自动预览转换结果（不存历史）
+        // 自动预览并存历史
+        var autoParams = { quality: parseFloat(qualityInput.value), maxWidth: parseInt(maxWidthInput.value) }
         var results = []
         for (var m = 0; m < pendingFiles.length; m++) {
           var res = await processFile(pendingFiles[m])
           if (res) results.push(res)
           else showToast(pendingFiles[m].name + ' 处理失败', 'error')
         }
-        if (results.length === 1)      showSingleResult(results[0].base64, results[0].imgSrc, pendingFiles[0].type)
-        else if (results.length > 1)   showBatchResults(results)
+        if (results.length === 1) {
+          showSingleResult(results[0].base64, results[0].imgSrc, pendingFiles[0].type)
+          await saveToHistory(results[0].name, pendingFiles[0], pendingFiles[0].type,
+            Object.assign({}, autoParams, { convertedSize: calcBase64Size(results[0].base64) }))
+        } else if (results.length > 1) {
+          showBatchResults(results)
+          for (var m2 = 0; m2 < results.length; m2++)
+            await saveToHistory(results[m2].name, pendingFiles[m2], pendingFiles[m2].type,
+              Object.assign({}, autoParams, { convertedSize: calcBase64Size(results[m2].base64) }))
+        }
         clearUploader()
       }
 
@@ -866,11 +884,13 @@
           }
           if (results.length === 1) {
             showSingleResult(results[0].base64, results[0].imgSrc, pendingFiles[0].type)
-            await saveToHistory(results[0].name, pendingFiles[0], pendingFiles[0].type, params)
+            await saveToHistory(results[0].name, pendingFiles[0], pendingFiles[0].type,
+              Object.assign({}, params, { convertedSize: calcBase64Size(results[0].base64) }))
           } else if (results.length > 1) {
             showBatchResults(results)
             for (var s = 0; s < results.length; s++)
-              await saveToHistory(results[s].name, pendingFiles[s], pendingFiles[s].type, params)
+              await saveToHistory(results[s].name, pendingFiles[s], pendingFiles[s].type,
+                Object.assign({}, params, { convertedSize: calcBase64Size(results[s].base64) }))
           }
         } else if (textarea.value) {
           if (textarea.value.indexOf('<svg') === -1)
