@@ -195,10 +195,10 @@
   <script type="text/javascript" src="./compiler.js"></script>
   <script type="text/javascript">
     window.onload = function () {
-      // ── HistoryDB（IndexedDB 优先，localStorage 兜底）────────
+      // ── HistoryDB（IndexedDB only；localStorage 无法存储 File 对象）──
       var HistoryDB = (function () {
-        var IDB_NAME = 'img2b64', IDB_VER = 1, STORE = 'history', LS_KEY = 'base64history'
-        var HIST_MAX = 30
+        var IDB_NAME = 'img2b64', IDB_VER = 2, STORE = 'history'
+        var HIST_MAX = 50
         var _db = null, _idb = false
 
         function _open() {
@@ -206,20 +206,12 @@
             var req = indexedDB.open(IDB_NAME, IDB_VER)
             req.onupgradeneeded = function (e) {
               var db = e.target.result
-              if (!db.objectStoreNames.contains(STORE)) {
-                db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true })
-              }
+              if (db.objectStoreNames.contains(STORE)) db.deleteObjectStore(STORE)
+              db.createObjectStore(STORE, { keyPath: 'id' })
             }
             req.onsuccess = function (e) { resolve(e.target.result) }
             req.onerror   = function () { reject() }
           })
-        }
-
-        function _lsGet() {
-          try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch (e) { return [] }
-        }
-        function _lsSet(arr) {
-          try { localStorage.setItem(LS_KEY, JSON.stringify(arr)) } catch (e) {}
         }
 
         return {
@@ -229,64 +221,58 @@
           },
           isIDB: function () { return _idb },
           getAll: function () {
-            if (_idb) {
-              return new Promise(function (resolve) {
-                var req = _db.transaction(STORE, 'readonly').objectStore(STORE).getAll()
-                req.onsuccess = function () { resolve((req.result || []).slice().reverse()) }
-                req.onerror   = function () { resolve([]) }
-              })
-            }
-            return Promise.resolve(_lsGet())
+            if (!_idb) return Promise.resolve([])
+            return new Promise(function (resolve) {
+              var req = _db.transaction(STORE, 'readonly').objectStore(STORE).getAll()
+              req.onsuccess = function () { resolve((req.result || []).slice().reverse()) }
+              req.onerror   = function () { resolve([]) }
+            })
           },
           add: function (item) {
-            if (_idb) {
-              return new Promise(function (resolve) {
-                var tx = _db.transaction(STORE, 'readwrite'), store = tx.objectStore(STORE)
-                store.add(item)
-                tx.oncomplete = function () {
-                  var tx2 = _db.transaction(STORE, 'readwrite'), s2 = tx2.objectStore(STORE)
-                  var cnt = s2.count()
-                  cnt.onsuccess = function () {
-                    if (cnt.result > HIST_MAX) {
-                      var cur = s2.openCursor(); var del = cnt.result - HIST_MAX
-                      cur.onsuccess = function (e) {
-                        var c = e.target.result
-                        if (c && del > 0) { c.delete(); del--; c.continue() }
-                      }
+            if (!_idb) return Promise.resolve()
+            return new Promise(function (resolve) {
+              var tx = _db.transaction(STORE, 'readwrite'), store = tx.objectStore(STORE)
+              store.add(item)
+              tx.oncomplete = function () {
+                var tx2 = _db.transaction(STORE, 'readwrite'), s2 = tx2.objectStore(STORE)
+                var cnt = s2.count()
+                cnt.onsuccess = function () {
+                  if (cnt.result > HIST_MAX) {
+                    var cur = s2.openCursor(); var del = cnt.result - HIST_MAX
+                    cur.onsuccess = function (e) {
+                      var c = e.target.result
+                      if (c && del > 0) { c.delete(); del--; c.continue() }
                     }
                   }
-                  resolve()
                 }
-                tx.onerror = resolve
-              })
-            }
-            var arr = _lsGet()
-            arr.unshift(item)
-            if (arr.length > HIST_MAX) arr = arr.slice(0, HIST_MAX)
-            _lsSet(arr)
-            return Promise.resolve()
+                resolve()
+              }
+              tx.onerror = resolve
+            })
+          },
+          put: function (item) {
+            if (!_idb) return Promise.resolve()
+            return new Promise(function (resolve) {
+              var tx = _db.transaction(STORE, 'readwrite')
+              tx.objectStore(STORE).put(item)
+              tx.oncomplete = resolve; tx.onerror = resolve
+            })
           },
           remove: function (id) {
-            if (_idb) {
-              return new Promise(function (resolve) {
-                var tx = _db.transaction(STORE, 'readwrite')
-                tx.objectStore(STORE).delete(id)
-                tx.oncomplete = resolve; tx.onerror = resolve
-              })
-            }
-            _lsSet(_lsGet().filter(function (x) { return x.id !== id }))
-            return Promise.resolve()
+            if (!_idb) return Promise.resolve()
+            return new Promise(function (resolve) {
+              var tx = _db.transaction(STORE, 'readwrite')
+              tx.objectStore(STORE).delete(id)
+              tx.oncomplete = resolve; tx.onerror = resolve
+            })
           },
           clear: function () {
-            if (_idb) {
-              return new Promise(function (resolve) {
-                var tx = _db.transaction(STORE, 'readwrite')
-                tx.objectStore(STORE).clear()
-                tx.oncomplete = resolve; tx.onerror = resolve
-              })
-            }
-            localStorage.removeItem(LS_KEY)
-            return Promise.resolve()
+            if (!_idb) return Promise.resolve()
+            return new Promise(function (resolve) {
+              var tx = _db.transaction(STORE, 'readwrite')
+              tx.objectStore(STORE).clear()
+              tx.oncomplete = resolve; tx.onerror = resolve
+            })
           }
         }
       })()
@@ -423,47 +409,45 @@
       themeToggle.addEventListener('click', function () { setTheme(!document.body.classList.contains('dark')) })
 
       // ── History ──────────────────────────────────────────────
-      function makeThumbnail(base64, mimeType) {
-        return new Promise(function (resolve) {
-          if (mimeType === 'image/svg+xml') { resolve(base64); return }
-          var img = new Image(); img.src = base64
-          img.onload = function () {
-            var size = 60, canvas = document.createElement('canvas')
-            canvas.width = canvas.height = size
-            var ctx = canvas.getContext('2d')
-            var s = Math.min(img.width, img.height)
-            ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size)
-            resolve(canvas.toDataURL('image/jpeg', 0.6))
-          }
-          img.onerror = function () { resolve(base64) }
-        })
+      function formatFileSize(bytes) {
+        return bytes < 1024 ? bytes + ' B'
+          : bytes < 1024 * 1024 ? (bytes / 1024).toFixed(1) + ' KB'
+          : (bytes / 1024 / 1024).toFixed(2) + ' MB'
       }
 
-      async function saveToHistory(name, base64, mimeType, params) {
-        var item = {
-          id: Date.now() + '_' + Math.random().toString(36).slice(2),
-          name: name, mimeType: mimeType, time: Date.now(), params: params || {}
-        }
-        if (HistoryDB.isIDB()) {
-          item.base64 = base64
-        } else {
-          if (base64.length > 500 * 1024) { showToast('图片较大，未存入历史', 'warning'); return }
-          item.base64 = await makeThumbnail(base64, mimeType)
-          item.thumbOnly = true
-        }
-        await HistoryDB.add(item)
-        renderHistory()
-      }
-
-      function formatParams(item) {
-        var p = item.params || {}
-        if (item.mimeType === 'image/svg+xml') {
-          return p.doubleQuote ? '双引号' : 'SVG'
-        }
+      function formatParamLabel(mimeType, p) {
+        if (mimeType === 'image/svg+xml') return p.doubleQuote ? '双引号' : 'SVG'
         var parts = []
         if (p.quality != null) parts.push(Math.round(p.quality * 100) + '%')
         if (p.maxWidth)        parts.push(p.maxWidth + 'px')
-        return parts.join(' · ') || ''
+        return parts.join(' · ') || '默认'
+      }
+
+      async function saveToHistory(name, fileOrNull, mimeType, params, textContent) {
+        if (!HistoryDB.isIDB()) return
+        var key = fileOrNull
+          ? (name + '_' + fileOrNull.size)
+          : ('text_' + mimeType + '_' + (textContent || '').slice(0, 80))
+        var all = await HistoryDB.getAll()
+        var existing = null
+        for (var i = 0; i < all.length; i++) { if (all[i].key === key) { existing = all[i]; break } }
+        var newParam = Object.assign({}, params, { time: Date.now() })
+        if (existing) {
+          existing.recentParams = [newParam].concat(existing.recentParams || []).slice(0, 3)
+          existing.time = Date.now()
+          if (fileOrNull) existing.file = fileOrNull
+          await HistoryDB.put(existing)
+        } else {
+          var item = {
+            id: Date.now() + '_' + Math.random().toString(36).slice(2),
+            key: key, name: name, mimeType: mimeType,
+            time: Date.now(), recentParams: [newParam]
+          }
+          if (fileOrNull) { item.file = fileOrNull; item.size = fileOrNull.size }
+          else { item.isText = true; item.textContent = textContent || '' }
+          await HistoryDB.add(item)
+        }
+        renderHistory()
       }
 
       function makeHistoryCard(item) {
@@ -471,13 +455,23 @@
         card.className = 'history-item'
 
         var thumb = document.createElement('img')
-        thumb.className = 'history-thumb'
-        thumb.src = item.base64; thumb.alt = item.name
+        thumb.className = 'history-thumb'; thumb.alt = item.name
+        if (item.file) {
+          var blobUrl = URL.createObjectURL(item.file)
+          thumb.src = blobUrl
+          thumb.onload = function () { URL.revokeObjectURL(blobUrl) }
+        } else if (item.isText && item.mimeType === 'image/svg+xml') {
+          try {
+            var svgBlob = new Blob([item.textContent], { type: 'image/svg+xml' })
+            var svgUrl = URL.createObjectURL(svgBlob)
+            thumb.src = svgUrl
+            thumb.onload = function () { URL.revokeObjectURL(svgUrl) }
+          } catch (e) {}
+        }
 
         var info = document.createElement('div')
         info.className = 'history-info'
 
-        // 顶行：文件名 + 参数标签 + 时间 + 删除
         var top = document.createElement('div')
         top.className = 'history-info-top'
 
@@ -485,11 +479,12 @@
         nameEl.className = 'history-name'
         nameEl.textContent = item.name; nameEl.title = item.name
 
-        var ps = formatParams(item)
-        var paramsEl = document.createElement('span')
-        paramsEl.className = 'history-params'
-        paramsEl.textContent = ps || ''
-        paramsEl.style.display = ps ? '' : 'none'
+        var ext = item.mimeType ? item.mimeType.split('/')[1].replace('jpeg', 'jpg').toUpperCase() : ''
+        var sizeStr = item.size ? formatFileSize(item.size) : (item.isText ? '文本' : '')
+        var metaEl = document.createElement('span')
+        metaEl.className = 'history-params'
+        metaEl.textContent = [ext, sizeStr].filter(Boolean).join(' · ')
+        metaEl.style.display = (ext || sizeStr) ? '' : 'none'
 
         var timeEl = document.createElement('div')
         timeEl.className = 'history-time'
@@ -499,29 +494,26 @@
         delBtn.type = 'button'; delBtn.className = 'history-delete-btn'; delBtn.textContent = '删除'
         ;(function (id) {
           delBtn.addEventListener('click', async function () {
-            await HistoryDB.remove(id)
-            renderHistory()
-            renderDrawer(historySearch.value)
+            await HistoryDB.remove(id); renderHistory(); renderDrawer(historySearch.value)
           })
         })(item.id)
 
-        top.appendChild(nameEl); top.appendChild(paramsEl)
+        top.appendChild(nameEl); top.appendChild(metaEl)
         top.appendChild(timeEl); top.appendChild(delBtn)
 
-        // 底行：三格式复制按钮（thumbOnly 降级时不显示）
+        // 底行：最近 3 条转换配置按钮
         var btns = document.createElement('div')
         btns.className = 'history-copy-btns'
-        if (!item.thumbOnly) {
-          ;['raw', 'css', 'html'].forEach(function (fmt) {
-            var btn = document.createElement('button')
-            btn.type = 'button'; btn.className = 'history-copy-btn'
-            btn.textContent = fmt === 'raw' ? 'Base64' : fmt.toUpperCase()
-            ;(function (b64, f) {
-              btn.addEventListener('click', function () { copyText(getFormattedOutput(b64, f)) })
-            })(item.base64, fmt)
-            btns.appendChild(btn)
-          })
-        }
+        ;(item.recentParams || []).forEach(function (p, idx) {
+          var btn = document.createElement('button')
+          btn.type = 'button'; btn.className = 'history-copy-btn'
+          btn.textContent = formatParamLabel(item.mimeType, p)
+          btn.title = item.isText ? '还原并转换' : '用此配置重新转换'
+          ;(function (hi, hp) {
+            btn.addEventListener('click', function () { reConvertFromHistory(hi, hp) })
+          })(item, p)
+          btns.appendChild(btn)
+        })
 
         info.appendChild(top); info.appendChild(btns)
         card.appendChild(thumb); card.appendChild(info)
@@ -711,23 +703,52 @@
       })
 
       // ── Input tab switch ─────────────────────────────────────
+      function switchInputTab(tab) {
+        for (var k = 0; k < inputTabBtns.length; k++) {
+          inputTabBtns[k].classList.toggle('input-tab--active', inputTabBtns[k].getAttribute('data-tab') === tab)
+        }
+        tabUpload.style.display = tab === 'upload' ? 'block' : 'none'
+        tabPaste.style.display  = tab === 'paste'  ? 'block' : 'none'
+        if (tab === 'upload') {
+          textarea.value = ''
+          updateParamsVisibility(pendingFiles.length ? 'image' : 'none')
+          if (!pendingFiles.length) { convertDisabled(true); resultToggle('none') }
+        } else {
+          pendingFiles = []; renderFilePreview()
+          updateParamsVisibility(textarea.value ? 'svg' : 'none')
+          convertDisabled(!textarea.value)
+        }
+      }
       for (var t = 0; t < inputTabBtns.length; t++) {
         inputTabBtns[t].addEventListener('click', function (e) {
-          var tab = e.currentTarget.getAttribute('data-tab')
-          for (var k = 0; k < inputTabBtns.length; k++) inputTabBtns[k].classList.remove('input-tab--active')
-          e.currentTarget.classList.add('input-tab--active')
-          tabUpload.style.display = tab === 'upload' ? 'block' : 'none'
-          tabPaste.style.display  = tab === 'paste'  ? 'block' : 'none'
-          if (tab === 'upload') {
-            textarea.value = ''
-            updateParamsVisibility(pendingFiles.length ? 'image' : 'none')
-            if (!pendingFiles.length) { convertDisabled(true); resultToggle('none') }
-          } else {
-            pendingFiles = []; renderFilePreview()
-            updateParamsVisibility(textarea.value ? 'svg' : 'none')
-            convertDisabled(!textarea.value)
-          }
+          switchInputTab(e.currentTarget.getAttribute('data-tab'))
         })
+      }
+
+      // ── Re-convert from history ───────────────────────────────
+      async function reConvertFromHistory(item, params) {
+        if (item.isText) {
+          switchInputTab('paste')
+          textarea.value = item.textContent
+          checkbox.checked = params.doubleQuote || false
+          updateParamsVisibility('svg')
+          convertDisabled(false)
+          svgToBase64()
+        } else if (item.file) {
+          switchInputTab('upload')
+          if (params.maxWidth) { maxWidthInput.value = params.maxWidth }
+          if (params.quality != null) {
+            qualityInput.value = params.quality
+            qualityDisplay.textContent = Math.round(params.quality * 100) + '%'
+          }
+          pendingFiles = [item.file]
+          updateParamsVisibility('image')
+          renderFilePreview()
+          convertDisabled(false)
+          var res = await processFile(item.file)
+          if (res) showSingleResult(res.base64, res.imgSrc, item.mimeType)
+          else showToast('转换失败', 'error')
+        }
       }
 
       // ── Upload file preview ───────────────────────────────────
@@ -779,7 +800,7 @@
         var res = ImageToBase64(input, { doubleQuote: checkbox.checked })
         var base64 = typeof res === 'string' ? res : res.input
         showSingleResult(base64, base64, 'image/svg+xml')
-        saveToHistory('SVG', base64, 'image/svg+xml', { doubleQuote: checkbox.checked })
+        saveToHistory('SVG', null, 'image/svg+xml', { doubleQuote: checkbox.checked }, input)
       }
 
       // ── Batch File Transfer（不自动存历史，等用户点转换）────
@@ -845,11 +866,11 @@
           }
           if (results.length === 1) {
             showSingleResult(results[0].base64, results[0].imgSrc, pendingFiles[0].type)
-            await saveToHistory(results[0].name, results[0].base64, pendingFiles[0].type, params)
+            await saveToHistory(results[0].name, pendingFiles[0], pendingFiles[0].type, params)
           } else if (results.length > 1) {
             showBatchResults(results)
             for (var s = 0; s < results.length; s++)
-              await saveToHistory(results[s].name, results[s].base64, pendingFiles[s].type, params)
+              await saveToHistory(results[s].name, pendingFiles[s], pendingFiles[s].type, params)
           }
         } else if (textarea.value) {
           if (textarea.value.indexOf('<svg') === -1)
@@ -922,7 +943,8 @@
 
       // ── Init ─────────────────────────────────────────────────
       HistoryDB.init().then(function () {
-        storageBadge.textContent = HistoryDB.isIDB() ? 'IndexedDB' : 'localStorage'
+        storageBadge.textContent = HistoryDB.isIDB() ? 'IndexedDB' : ''
+        storageBadge.style.display = HistoryDB.isIDB() ? '' : 'none'
         renderHistory()
       })
     }
