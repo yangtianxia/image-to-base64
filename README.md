@@ -18,15 +18,16 @@
 .icon { background-image: url("data:image/png;base64,iVBORw0KGgo..."); }
 ```
 
-Chrome 扩展、Electron 应用打包后同样存在类似的路径引用限制，Base64 可以绕开路径解析问题。
+Chrome 扩展的 Content Script 注入样式时同样无法使用相对路径，Base64 是最简单的解决方式。
 
 ### CSS mask-image 图标染色方案
 
-这是目前最主流的纯 CSS 图标方案：用 SVG 做遮罩，`background-color` 控制颜色，一套图标可以呈现任意颜色，无需维护多色版本。**这个方案必须用 Base64**，直接引用 SVG 文件在多数浏览器下无法生效：
+这是目前最主流的纯 CSS 图标方案：用 SVG 做遮罩，`background-color` 控制颜色，一套图标可以呈现任意颜色，无需维护多色版本。在小程序等受限平台必须用 Base64；普通 Web 项目中用 Base64 也可以省去一次 HTTP 请求，且不受跨域限制：
 
 ```css
 .icon {
   background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxu...");
   mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxu...");
   mask-size: contain;
   mask-repeat: no-repeat;
