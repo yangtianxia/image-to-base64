@@ -1327,3 +1327,35 @@ button.history-copy-btn:hover {
   color: var(--text-muted);
   transition: color 0.3s;
 }
+
+/* ── Input tabs ─────────────────────────────────────────────── */
+.input-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+  transition: border-color 0.3s;
+}
+.input-tab {
+  flex: 1;
+  padding: 8px 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.input-tab:hover { color: var(--primary); }
+.input-tab--active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.tab-pane { display: block; }
+
+/* ── Compress-section sub-items ─────────────────────────────── */
+.compress-item#quality-item,
+.compress-item#double-quote-item {
+  display: none;
+}

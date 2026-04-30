@@ -58,53 +58,60 @@
         <!-- 左：输入面板 -->
         <div class="tool-panel tool-panel--input">
 
-          <!-- 上传区 -->
-          <div class="upload-zone" id="upload-zone">
-            <input id="fileupload" type="file" accept="image/*" multiple />
-            <div class="upload-zone-content">
-              <svg class="upload-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              <p class="upload-zone-title">点击或拖拽图片到此处</p>
-              <p class="upload-zone-hint">JPG · PNG · SVG · GIF，支持多选</p>
-              <span class="upload-zone-paste-hint">也可以按 Ctrl+V 粘贴</span>
+          <!-- Tab 切换 -->
+          <div class="input-tabs">
+            <button type="button" class="input-tab input-tab--active" data-tab="upload">上传图片</button>
+            <button type="button" class="input-tab" data-tab="paste">粘贴代码</button>
+          </div>
+
+          <!-- Tab: 上传 -->
+          <div id="tab-upload" class="tab-pane">
+            <div class="upload-zone" id="upload-zone">
+              <input id="fileupload" type="file" accept="image/*" multiple />
+              <div class="upload-zone-content">
+                <svg class="upload-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p class="upload-zone-title">点击或拖拽图片到此处</p>
+                <p class="upload-zone-hint">JPG · PNG · SVG · GIF，支持多选</p>
+                <span class="upload-zone-paste-hint">也可以按 Ctrl+V 粘贴</span>
+              </div>
+            </div>
+            <div id="file-preview" class="file-preview" style="display:none"></div>
+          </div>
+
+          <!-- Tab: 粘贴 -->
+          <div id="tab-paste" class="tab-pane" style="display:none">
+            <div class="textarea">
+              <textarea id="textarea" placeholder="粘贴 SVG 代码，或 data:image/svg+xml;base64,… 格式"></textarea>
             </div>
           </div>
 
-          <!-- 已选文件预览 -->
-          <div id="file-preview" class="file-preview" style="display:none"></div>
-
-          <!-- 分隔 -->
-          <div class="or-divider"><span>或粘贴 SVG</span></div>
-
-          <!-- SVG 输入 -->
-          <div class="textarea">
-            <textarea id="textarea" placeholder="粘贴 SVG 代码，或 data:image/svg+xml;base64,… 格式"></textarea>
-          </div>
-
-          <!-- 压缩选项 -->
+          <!-- 参数区（按输入类型显示不同控件） -->
           <div id="compress-section" class="compress-section" style="display:none">
-            <div class="compress-item">
+            <div class="compress-item" id="max-width-item">
               <label for="max-width">最大宽度</label>
               <input type="number" id="max-width" value="1200" min="100" max="9999" />
               <span>px</span>
             </div>
-            <div class="compress-item">
+            <div class="compress-item" id="quality-item">
               <label for="quality">压缩质量</label>
               <input type="range" id="quality" min="0.1" max="1" step="0.05" value="0.85" />
               <span id="quality-display">85%</span>
+            </div>
+            <div class="compress-item" id="double-quote-item">
+              <label class="checkbox">
+                <input id="checkbox" type="checkbox" />
+                <span class="checkbox-label">双引号模式</span>
+              </label>
             </div>
           </div>
 
           <!-- 操作栏 -->
           <div class="action">
             <button id="convert" disabled type="button">开始转换</button>
-            <label class="checkbox">
-              <input id="checkbox" type="checkbox" />
-              <span class="checkbox-label">双引号模式</span>
-            </label>
           </div>
         </div>
 
@@ -188,10 +195,10 @@
   <script type="text/javascript" src="./compiler.js"></script>
   <script type="text/javascript">
     window.onload = function () {
-      // ── HistoryDB（IndexedDB 优先，localStorage 兜底）────────
+      // ── HistoryDB（IndexedDB only；localStorage 无法存储 File 对象）──
       var HistoryDB = (function () {
-        var IDB_NAME = 'img2b64', IDB_VER = 1, STORE = 'history', LS_KEY = 'base64history'
-        var HIST_MAX = 30
+        var IDB_NAME = 'img2b64', IDB_VER = 2, STORE = 'history'
+        var HIST_MAX = 50
         var _db = null, _idb = false
 
         function _open() {
@@ -199,20 +206,12 @@
             var req = indexedDB.open(IDB_NAME, IDB_VER)
             req.onupgradeneeded = function (e) {
               var db = e.target.result
-              if (!db.objectStoreNames.contains(STORE)) {
-                db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true })
-              }
+              if (db.objectStoreNames.contains(STORE)) db.deleteObjectStore(STORE)
+              db.createObjectStore(STORE, { keyPath: 'id' })
             }
             req.onsuccess = function (e) { resolve(e.target.result) }
             req.onerror   = function () { reject() }
           })
-        }
-
-        function _lsGet() {
-          try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch (e) { return [] }
-        }
-        function _lsSet(arr) {
-          try { localStorage.setItem(LS_KEY, JSON.stringify(arr)) } catch (e) {}
         }
 
         return {
@@ -222,64 +221,58 @@
           },
           isIDB: function () { return _idb },
           getAll: function () {
-            if (_idb) {
-              return new Promise(function (resolve) {
-                var req = _db.transaction(STORE, 'readonly').objectStore(STORE).getAll()
-                req.onsuccess = function () { resolve((req.result || []).slice().reverse()) }
-                req.onerror   = function () { resolve([]) }
-              })
-            }
-            return Promise.resolve(_lsGet())
+            if (!_idb) return Promise.resolve([])
+            return new Promise(function (resolve) {
+              var req = _db.transaction(STORE, 'readonly').objectStore(STORE).getAll()
+              req.onsuccess = function () { resolve((req.result || []).slice().reverse()) }
+              req.onerror   = function () { resolve([]) }
+            })
           },
           add: function (item) {
-            if (_idb) {
-              return new Promise(function (resolve) {
-                var tx = _db.transaction(STORE, 'readwrite'), store = tx.objectStore(STORE)
-                store.add(item)
-                tx.oncomplete = function () {
-                  var tx2 = _db.transaction(STORE, 'readwrite'), s2 = tx2.objectStore(STORE)
-                  var cnt = s2.count()
-                  cnt.onsuccess = function () {
-                    if (cnt.result > HIST_MAX) {
-                      var cur = s2.openCursor(); var del = cnt.result - HIST_MAX
-                      cur.onsuccess = function (e) {
-                        var c = e.target.result
-                        if (c && del > 0) { c.delete(); del--; c.continue() }
-                      }
+            if (!_idb) return Promise.resolve()
+            return new Promise(function (resolve) {
+              var tx = _db.transaction(STORE, 'readwrite'), store = tx.objectStore(STORE)
+              store.add(item)
+              tx.oncomplete = function () {
+                var tx2 = _db.transaction(STORE, 'readwrite'), s2 = tx2.objectStore(STORE)
+                var cnt = s2.count()
+                cnt.onsuccess = function () {
+                  if (cnt.result > HIST_MAX) {
+                    var cur = s2.openCursor(); var del = cnt.result - HIST_MAX
+                    cur.onsuccess = function (e) {
+                      var c = e.target.result
+                      if (c && del > 0) { c.delete(); del--; c.continue() }
                     }
                   }
-                  resolve()
                 }
-                tx.onerror = resolve
-              })
-            }
-            var arr = _lsGet()
-            arr.unshift(item)
-            if (arr.length > HIST_MAX) arr = arr.slice(0, HIST_MAX)
-            _lsSet(arr)
-            return Promise.resolve()
+                resolve()
+              }
+              tx.onerror = resolve
+            })
+          },
+          put: function (item) {
+            if (!_idb) return Promise.resolve()
+            return new Promise(function (resolve) {
+              var tx = _db.transaction(STORE, 'readwrite')
+              tx.objectStore(STORE).put(item)
+              tx.oncomplete = resolve; tx.onerror = resolve
+            })
           },
           remove: function (id) {
-            if (_idb) {
-              return new Promise(function (resolve) {
-                var tx = _db.transaction(STORE, 'readwrite')
-                tx.objectStore(STORE).delete(id)
-                tx.oncomplete = resolve; tx.onerror = resolve
-              })
-            }
-            _lsSet(_lsGet().filter(function (x) { return x.id !== id }))
-            return Promise.resolve()
+            if (!_idb) return Promise.resolve()
+            return new Promise(function (resolve) {
+              var tx = _db.transaction(STORE, 'readwrite')
+              tx.objectStore(STORE).delete(id)
+              tx.oncomplete = resolve; tx.onerror = resolve
+            })
           },
           clear: function () {
-            if (_idb) {
-              return new Promise(function (resolve) {
-                var tx = _db.transaction(STORE, 'readwrite')
-                tx.objectStore(STORE).clear()
-                tx.oncomplete = resolve; tx.onerror = resolve
-              })
-            }
-            localStorage.removeItem(LS_KEY)
-            return Promise.resolve()
+            if (!_idb) return Promise.resolve()
+            return new Promise(function (resolve) {
+              var tx = _db.transaction(STORE, 'readwrite')
+              tx.objectStore(STORE).clear()
+              tx.oncomplete = resolve; tx.onerror = resolve
+            })
           }
         }
       })()
@@ -325,11 +318,17 @@
       var maxWidthInput   = document.getElementById('max-width')
       var qualityInput    = document.getElementById('quality')
       var qualityDisplay  = document.getElementById('quality-display')
-      var compressSection = document.getElementById('compress-section')
-      var outputEmpty     = document.getElementById('output-empty')
-      var uploadZone      = document.getElementById('upload-zone')
-      var filePreview     = document.getElementById('file-preview')
-      var storageBadge    = document.getElementById('storage-badge')
+      var compressSection  = document.getElementById('compress-section')
+      var maxWidthItem     = document.getElementById('max-width-item')
+      var qualityItem      = document.getElementById('quality-item')
+      var doubleQuoteItem  = document.getElementById('double-quote-item')
+      var outputEmpty      = document.getElementById('output-empty')
+      var uploadZone       = document.getElementById('upload-zone')
+      var filePreview      = document.getElementById('file-preview')
+      var storageBadge     = document.getElementById('storage-badge')
+      var tabUpload        = document.getElementById('tab-upload')
+      var tabPaste         = document.getElementById('tab-paste')
+      var inputTabBtns     = document.querySelectorAll('.input-tab')
 
       // ── Toast ────────────────────────────────────────────────
       function showToast(msg, type) {
@@ -379,6 +378,25 @@
           : (bytes / 1024 / 1024).toFixed(2) + ' MB'
       }
 
+      // ── Params visibility ────────────────────────────────────
+      function updateParamsVisibility(mode) {
+        if (mode === 'none') {
+          compressSection.style.display = 'none'
+        } else if (mode === 'svg') {
+          compressSection.style.display = 'flex'
+          maxWidthItem.style.display    = 'none'
+          qualityItem.style.display     = 'none'
+          doubleQuoteItem.style.display = 'flex'
+        } else {
+          var hasPng  = pendingFiles.some(function (f) { return f.type === 'image/png' })
+          var hasJpeg = pendingFiles.some(function (f) { return f.type === 'image/jpeg' })
+          compressSection.style.display = (hasPng || hasJpeg) ? 'flex' : 'none'
+          maxWidthItem.style.display    = (hasPng || hasJpeg) ? 'flex' : 'none'
+          qualityItem.style.display     = hasJpeg ? 'flex' : 'none'
+          doubleQuoteItem.style.display = 'none'
+        }
+      }
+
       // ── Dark Mode ────────────────────────────────────────────
       function setTheme(dark) {
         document.body.classList.toggle('dark', dark)
@@ -391,26 +409,45 @@
       themeToggle.addEventListener('click', function () { setTheme(!document.body.classList.contains('dark')) })
 
       // ── History ──────────────────────────────────────────────
-      async function saveToHistory(name, base64, mimeType, params) {
-        if (base64.length > 500 * 1024) return
-        var item = {
-          id: Date.now() + '_' + Math.random().toString(36).slice(2),
-          name: name, base64: base64, mimeType: mimeType,
-          time: Date.now(), params: params || {}
-        }
-        await HistoryDB.add(item)
-        renderHistory()
+      function formatFileSize(bytes) {
+        return bytes < 1024 ? bytes + ' B'
+          : bytes < 1024 * 1024 ? (bytes / 1024).toFixed(1) + ' KB'
+          : (bytes / 1024 / 1024).toFixed(2) + ' MB'
       }
 
-      function formatParams(item) {
-        var p = item.params || {}
-        if (item.mimeType === 'image/svg+xml') {
-          return p.doubleQuote ? '双引号' : 'SVG'
-        }
+      function formatParamLabel(mimeType, p) {
+        if (mimeType === 'image/svg+xml') return p.doubleQuote ? '双引号' : 'SVG'
         var parts = []
         if (p.quality != null) parts.push(Math.round(p.quality * 100) + '%')
         if (p.maxWidth)        parts.push(p.maxWidth + 'px')
-        return parts.join(' · ') || ''
+        return parts.join(' · ') || '默认'
+      }
+
+      async function saveToHistory(name, fileOrNull, mimeType, params, textContent) {
+        if (!HistoryDB.isIDB()) return
+        var key = fileOrNull
+          ? (name + '_' + fileOrNull.size)
+          : ('text_' + mimeType + '_' + (textContent || '').slice(0, 80))
+        var all = await HistoryDB.getAll()
+        var existing = null
+        for (var i = 0; i < all.length; i++) { if (all[i].key === key) { existing = all[i]; break } }
+        var newParam = Object.assign({}, params, { time: Date.now() })
+        if (existing) {
+          existing.recentParams = [newParam].concat(existing.recentParams || []).slice(0, 3)
+          existing.time = Date.now()
+          if (fileOrNull) existing.file = fileOrNull
+          await HistoryDB.put(existing)
+        } else {
+          var item = {
+            id: Date.now() + '_' + Math.random().toString(36).slice(2),
+            key: key, name: name, mimeType: mimeType,
+            time: Date.now(), recentParams: [newParam]
+          }
+          if (fileOrNull) { item.file = fileOrNull; item.size = fileOrNull.size }
+          else { item.isText = true; item.textContent = textContent || '' }
+          await HistoryDB.add(item)
+        }
+        renderHistory()
       }
 
       function makeHistoryCard(item) {
@@ -418,13 +455,23 @@
         card.className = 'history-item'
 
         var thumb = document.createElement('img')
-        thumb.className = 'history-thumb'
-        thumb.src = item.base64; thumb.alt = item.name
+        thumb.className = 'history-thumb'; thumb.alt = item.name
+        if (item.file) {
+          var blobUrl = URL.createObjectURL(item.file)
+          thumb.src = blobUrl
+          thumb.onload = function () { URL.revokeObjectURL(blobUrl) }
+        } else if (item.isText && item.mimeType === 'image/svg+xml') {
+          try {
+            var svgBlob = new Blob([item.textContent], { type: 'image/svg+xml' })
+            var svgUrl = URL.createObjectURL(svgBlob)
+            thumb.src = svgUrl
+            thumb.onload = function () { URL.revokeObjectURL(svgUrl) }
+          } catch (e) {}
+        }
 
         var info = document.createElement('div')
         info.className = 'history-info'
 
-        // 顶行：文件名 + 参数标签 + 时间 + 删除
         var top = document.createElement('div')
         top.className = 'history-info-top'
 
@@ -432,11 +479,12 @@
         nameEl.className = 'history-name'
         nameEl.textContent = item.name; nameEl.title = item.name
 
-        var ps = formatParams(item)
-        var paramsEl = document.createElement('span')
-        paramsEl.className = 'history-params'
-        paramsEl.textContent = ps || ''
-        paramsEl.style.display = ps ? '' : 'none'
+        var ext = item.mimeType ? item.mimeType.split('/')[1].replace('jpeg', 'jpg').toUpperCase() : ''
+        var sizeStr = item.size ? formatFileSize(item.size) : (item.isText ? '文本' : '')
+        var metaEl = document.createElement('span')
+        metaEl.className = 'history-params'
+        metaEl.textContent = [ext, sizeStr].filter(Boolean).join(' · ')
+        metaEl.style.display = (ext || sizeStr) ? '' : 'none'
 
         var timeEl = document.createElement('div')
         timeEl.className = 'history-time'
@@ -446,25 +494,24 @@
         delBtn.type = 'button'; delBtn.className = 'history-delete-btn'; delBtn.textContent = '删除'
         ;(function (id) {
           delBtn.addEventListener('click', async function () {
-            await HistoryDB.remove(id)
-            renderHistory()
-            renderDrawer(historySearch.value)
+            await HistoryDB.remove(id); renderHistory(); renderDrawer(historySearch.value)
           })
         })(item.id)
 
-        top.appendChild(nameEl); top.appendChild(paramsEl)
+        top.appendChild(nameEl); top.appendChild(metaEl)
         top.appendChild(timeEl); top.appendChild(delBtn)
 
-        // 底行：三格式复制按钮
+        // 底行：最近 3 条转换配置按钮
         var btns = document.createElement('div')
         btns.className = 'history-copy-btns'
-        ;['raw', 'css', 'html'].forEach(function (fmt) {
+        ;(item.recentParams || []).forEach(function (p, idx) {
           var btn = document.createElement('button')
           btn.type = 'button'; btn.className = 'history-copy-btn'
-          btn.textContent = fmt === 'raw' ? 'Base64' : fmt.toUpperCase()
-          ;(function (b64, f) {
-            btn.addEventListener('click', function () { copyText(getFormattedOutput(b64, f)) })
-          })(item.base64, fmt)
+          btn.textContent = formatParamLabel(item.mimeType, p)
+          btn.title = item.isText ? '还原并转换' : '用此配置重新转换'
+          ;(function (hi, hp) {
+            btn.addEventListener('click', function () { reConvertFromHistory(hi, hp) })
+          })(item, p)
           btns.appendChild(btn)
         })
 
@@ -655,6 +702,55 @@
         if (resultTextarea.value) copyText(resultTextarea.value)
       })
 
+      // ── Input tab switch ─────────────────────────────────────
+      function switchInputTab(tab) {
+        for (var k = 0; k < inputTabBtns.length; k++) {
+          inputTabBtns[k].classList.toggle('input-tab--active', inputTabBtns[k].getAttribute('data-tab') === tab)
+        }
+        tabUpload.style.display = tab === 'upload' ? 'block' : 'none'
+        tabPaste.style.display  = tab === 'paste'  ? 'block' : 'none'
+        if (tab === 'upload') {
+          textarea.value = ''
+          updateParamsVisibility(pendingFiles.length ? 'image' : 'none')
+          if (!pendingFiles.length) { convertDisabled(true); resultToggle('none') }
+        } else {
+          pendingFiles = []; renderFilePreview()
+          updateParamsVisibility(textarea.value ? 'svg' : 'none')
+          convertDisabled(!textarea.value)
+        }
+      }
+      for (var t = 0; t < inputTabBtns.length; t++) {
+        inputTabBtns[t].addEventListener('click', function (e) {
+          switchInputTab(e.currentTarget.getAttribute('data-tab'))
+        })
+      }
+
+      // ── Re-convert from history ───────────────────────────────
+      async function reConvertFromHistory(item, params) {
+        if (item.isText) {
+          switchInputTab('paste')
+          textarea.value = item.textContent
+          checkbox.checked = params.doubleQuote || false
+          updateParamsVisibility('svg')
+          convertDisabled(false)
+          svgToBase64()
+        } else if (item.file) {
+          switchInputTab('upload')
+          if (params.maxWidth) { maxWidthInput.value = params.maxWidth }
+          if (params.quality != null) {
+            qualityInput.value = params.quality
+            qualityDisplay.textContent = Math.round(params.quality * 100) + '%'
+          }
+          pendingFiles = [item.file]
+          updateParamsVisibility('image')
+          renderFilePreview()
+          convertDisabled(false)
+          var res = await processFile(item.file)
+          if (res) showSingleResult(res.base64, res.imgSrc, item.mimeType)
+          else showToast('转换失败', 'error')
+        }
+      }
+
       // ── Upload file preview ───────────────────────────────────
       function renderFilePreview() {
         if (pendingFiles.length === 0) {
@@ -681,13 +777,9 @@
               renderFilePreview()
               if (pendingFiles.length === 0) {
                 convertDisabled(true); resultToggle('none')
-                var hasComp = false
-                compressSection.style.display = 'none'
+                updateParamsVisibility('none')
               } else {
-                var hasComp = pendingFiles.some(function (f) {
-                  return f.type === 'image/png' || f.type === 'image/jpeg'
-                })
-                compressSection.style.display = hasComp ? 'flex' : 'none'
+                updateParamsVisibility('image')
               }
             })
           })(idx)
@@ -704,11 +796,11 @@
           try { input = atob(input.slice(b64pre.length)); textarea.value = input }
           catch (e) { showToast('Base64 解码失败', 'error'); return }
         }
-        compressSection.style.display = 'none'; pendingFiles = []
+        pendingFiles = []
         var res = ImageToBase64(input, { doubleQuote: checkbox.checked })
         var base64 = typeof res === 'string' ? res : res.input
         showSingleResult(base64, base64, 'image/svg+xml')
-        saveToHistory('SVG', base64, 'image/svg+xml', { doubleQuote: checkbox.checked })
+        saveToHistory('SVG', null, 'image/svg+xml', { doubleQuote: checkbox.checked }, input)
       }
 
       // ── Batch File Transfer（不自动存历史，等用户点转换）────
@@ -733,7 +825,7 @@
         // 单个 SVG 直接转换并存历史
         if (valid.length === 1 && valid[0].type === 'image/svg+xml') {
           textarea.value = await valid[0].text()
-          convertDisabled(false); compressSection.style.display = 'none'
+          convertDisabled(false); updateParamsVisibility('svg')
           svgToBase64(); clearUploader(); return
         }
 
@@ -744,8 +836,7 @@
           combined = combined.slice(0, MAX_FILES)
         }
         pendingFiles = combined; textarea.value = ''
-        var hasComp = pendingFiles.some(function (f) { return f.type === 'image/png' || f.type === 'image/jpeg' })
-        compressSection.style.display = hasComp ? 'flex' : 'none'
+        updateParamsVisibility('image')
         convertDisabled(false); renderFilePreview()
 
         // 自动预览转换结果（不存历史）
@@ -775,11 +866,11 @@
           }
           if (results.length === 1) {
             showSingleResult(results[0].base64, results[0].imgSrc, pendingFiles[0].type)
-            await saveToHistory(results[0].name, results[0].base64, pendingFiles[0].type, params)
+            await saveToHistory(results[0].name, pendingFiles[0], pendingFiles[0].type, params)
           } else if (results.length > 1) {
             showBatchResults(results)
             for (var s = 0; s < results.length; s++)
-              await saveToHistory(results[s].name, results[s].base64, pendingFiles[s].type, params)
+              await saveToHistory(results[s].name, pendingFiles[s], pendingFiles[s].type, params)
           }
         } else if (textarea.value) {
           if (textarea.value.indexOf('<svg') === -1)
@@ -829,8 +920,8 @@
       textarea.addEventListener('blur',  function () { textarea.parentElement.classList.remove('focus') })
       textarea.addEventListener('input', function (e) {
         if (e.target.value) {
-          convertDisabled(false); compressSection.style.display = 'none'; pendingFiles = []; renderFilePreview()
-        } else { resultToggle('none'); convertDisabled(true) }
+          convertDisabled(false); updateParamsVisibility('svg'); pendingFiles = []; renderFilePreview()
+        } else { resultToggle('none'); convertDisabled(true); updateParamsVisibility('none') }
       })
 
       // ── File & Drop events ────────────────────────────────────
@@ -852,7 +943,8 @@
 
       // ── Init ─────────────────────────────────────────────────
       HistoryDB.init().then(function () {
-        storageBadge.textContent = HistoryDB.isIDB() ? 'IndexedDB' : 'localStorage'
+        storageBadge.textContent = HistoryDB.isIDB() ? 'IndexedDB' : ''
+        storageBadge.style.display = HistoryDB.isIDB() ? '' : 'none'
         renderHistory()
       })
     }
