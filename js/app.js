@@ -27,6 +27,7 @@ var resultMeta        = document.getElementById('result-meta')
 var resultTypeBadge   = document.getElementById('result-type-badge')
 var resultSizeDisplay = document.getElementById('result-size-display')
 var resultCopyBtn     = document.getElementById('result-copy-btn')
+var resultDownloadBtn = document.getElementById('result-download-btn')
 var historyList     = document.getElementById('history-list')
 var clearHistoryBtn = document.getElementById('clear-history')
 var historySection  = document.getElementById('history-section')
@@ -59,7 +60,7 @@ setTheme(savedTheme === 'dark' || (!savedTheme && prefersDark))
 themeToggle.addEventListener('click', function () { setTheme(!document.body.classList.contains('dark')) })
 
 // ── History actions ──────────────────────────────────────
-async function saveToHistory(name, fileOrNull, mimeType, params, textContent) {
+async function saveToHistory(name, fileOrNull, mimeType, params, textContent, base64Result) {
   if (!HistoryDB.isIDB()) return
   var key = fileOrNull
     ? (name + '_' + fileOrNull.size)
@@ -67,7 +68,7 @@ async function saveToHistory(name, fileOrNull, mimeType, params, textContent) {
   var all = await HistoryDB.getAll()
   var existing = null
   for (var i = 0; i < all.length; i++) { if (all[i].key === key) { existing = all[i]; break } }
-  var newParam = Object.assign({}, params, { time: Date.now() })
+  var newParam = Object.assign({}, params, { time: Date.now(), base64: base64Result || '' })
   if (existing) {
     var rp = (existing.recentParams || []).filter(function (p) {
       if (mimeType === 'image/svg+xml') return p.doubleQuote !== newParam.doubleQuote
@@ -117,6 +118,27 @@ for (var i = 0; i < formatBtns.length; i++) {
 resultCopyBtn.addEventListener('click', function () {
   if (resultTextarea.value) copyText(resultTextarea.value)
 })
+resultDownloadBtn.addEventListener('click', function () {
+  if (!currentBase64) return
+  var mime = currentMime || 'application/octet-stream'
+  var blob
+  if (currentBase64.indexOf(';base64,') !== -1) {
+    var b64str = currentBase64.split(';base64,')[1]
+    var binary = atob(b64str)
+    var bytes = new Uint8Array(binary.length)
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    blob = new Blob([bytes], { type: mime })
+  } else {
+    var svgText = decodeURIComponent(currentBase64.split(',').slice(1).join(','))
+    blob = new Blob([svgText], { type: 'image/svg+xml' })
+  }
+  var ext = mimeToExt(mime).toLowerCase()
+  var filename = 'image.' + (ext === '未知' ? 'bin' : ext)
+  var url = URL.createObjectURL(blob)
+  var a = document.createElement('a'); a.href = url; a.download = filename
+  document.body.appendChild(a); a.click()
+  document.body.removeChild(a); URL.revokeObjectURL(url)
+})
 
 // ── Input tab buttons ────────────────────────────────────
 for (var t = 0; t < inputTabBtns.length; t++) {
@@ -150,7 +172,7 @@ async function reConvertFromHistory(item, params) {
     renderFilePreview()
     convertDisabled(false)
     var res = await processFile(item.file)
-    if (res) showSingleResult(res.base64, res.imgSrc, item.mimeType)
+    if (res) showSingleResult(res.base64, res.imgSrc, item.mimeType, false, item.file.size)
     else showToast('转换失败', 'error')
   }
 }
@@ -167,9 +189,9 @@ function svgToBase64() {
   pendingFiles = []
   var res = ImageToBase64(input, { doubleQuote: checkbox.checked })
   var base64 = typeof res === 'string' ? res : res.input
-  showSingleResult(base64, base64, 'image/svg+xml', isBase64Input)
+  showSingleResult(base64, base64, 'image/svg+xml', isBase64Input, new Blob([input]).size)
   saveToHistory('SVG', null, 'image/svg+xml',
-    { doubleQuote: checkbox.checked, convertedSize: calcBase64Size(base64) }, input)
+    { doubleQuote: checkbox.checked, convertedSize: calcBase64Size(base64) }, input, base64)
 }
 
 // ── File Transfer ────────────────────────────────────────
@@ -207,18 +229,20 @@ async function transferFiles(files) {
     else showToast(pendingFiles[m].name + ' 处理失败', 'error')
   }
   if (results.length === 1) {
-    showSingleResult(results[0].base64, results[0].imgSrc, pendingFiles[0].type)
+    showSingleResult(results[0].base64, results[0].imgSrc, pendingFiles[0].type, false, pendingFiles[0].size)
     var p0 = pendingFiles[0]
     await saveToHistory(results[0].name, p0, p0.type, p0.type === 'image/svg+xml'
       ? { doubleQuote: checkbox.checked, convertedSize: calcBase64Size(results[0].base64) }
-      : { quality: parseFloat(qualityInput.value), maxWidth: parseInt(maxWidthInput.value), convertedSize: calcBase64Size(results[0].base64) })
+      : { quality: parseFloat(qualityInput.value), maxWidth: parseInt(maxWidthInput.value), convertedSize: calcBase64Size(results[0].base64) },
+      undefined, results[0].base64)
   } else if (results.length > 1) {
     showBatchResults(results)
     for (var m2 = 0; m2 < results.length; m2++) {
       var pm = pendingFiles[m2]
       await saveToHistory(results[m2].name, pm, pm.type, pm.type === 'image/svg+xml'
         ? { doubleQuote: checkbox.checked, convertedSize: calcBase64Size(results[m2].base64) }
-        : { quality: parseFloat(qualityInput.value), maxWidth: parseInt(maxWidthInput.value), convertedSize: calcBase64Size(results[m2].base64) })
+        : { quality: parseFloat(qualityInput.value), maxWidth: parseInt(maxWidthInput.value), convertedSize: calcBase64Size(results[m2].base64) },
+        undefined, results[m2].base64)
     }
   }
   clearUploader()
@@ -233,18 +257,20 @@ convert.addEventListener('click', async function () {
       if (res) results.push(res)
     }
     if (results.length === 1) {
-      showSingleResult(results[0].base64, results[0].imgSrc, pendingFiles[0].type)
+      showSingleResult(results[0].base64, results[0].imgSrc, pendingFiles[0].type, false, pendingFiles[0].size)
       var p0 = pendingFiles[0]
       await saveToHistory(results[0].name, p0, p0.type, p0.type === 'image/svg+xml'
         ? { doubleQuote: checkbox.checked, convertedSize: calcBase64Size(results[0].base64) }
-        : { quality: parseFloat(qualityInput.value), maxWidth: parseInt(maxWidthInput.value), convertedSize: calcBase64Size(results[0].base64) })
+        : { quality: parseFloat(qualityInput.value), maxWidth: parseInt(maxWidthInput.value), convertedSize: calcBase64Size(results[0].base64) },
+        undefined, results[0].base64)
     } else if (results.length > 1) {
       showBatchResults(results)
       for (var s = 0; s < results.length; s++) {
         var ps = pendingFiles[s]
         await saveToHistory(results[s].name, ps, ps.type, ps.type === 'image/svg+xml'
           ? { doubleQuote: checkbox.checked, convertedSize: calcBase64Size(results[s].base64) }
-          : { quality: parseFloat(qualityInput.value), maxWidth: parseInt(maxWidthInput.value), convertedSize: calcBase64Size(results[s].base64) })
+          : { quality: parseFloat(qualityInput.value), maxWidth: parseInt(maxWidthInput.value), convertedSize: calcBase64Size(results[s].base64) },
+          undefined, results[s].base64)
       }
     }
   } else if (textarea.value) {

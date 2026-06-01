@@ -27,7 +27,7 @@ function resultToggle(display) {
 function convertDisabled(d) { convert.disabled = d }
 function clearUploader() { uploader.value = '' }
 
-function showSingleResult(base64, imgSrc, mime, svgTagOnly) {
+function showSingleResult(base64, imgSrc, mime, svgTagOnly, originalSize) {
   currentBase64 = base64; currentMime = mime || ''
   var isSvg = currentMime === 'image/svg+xml'
   var tagOnly = isSvg && !!svgTagOnly
@@ -39,7 +39,8 @@ function showSingleResult(base64, imgSrc, mime, svgTagOnly) {
   var ext = mimeToExt(mime)
   resultTypeBadge.textContent = ext
   resultTypeBadge.className = 'result-type-badge' + (ext !== '未知' ? ' result-type-badge--' + ext.toLowerCase() : '')
-  resultSizeDisplay.textContent = calcBase64Size(base64)
+  var convertedStr = calcBase64Size(base64)
+  resultSizeDisplay.textContent = originalSize ? formatFileSize(originalSize) + ' → ' + convertedStr : convertedStr
   resultMeta.style.display = 'flex'
   resultToggle('block')
 }
@@ -144,6 +145,19 @@ function makeHistoryCard(item) {
       btn.addEventListener('click', function () { reConvertFromHistory(hi, hp) })
     })(item, p)
     btns.appendChild(btn)
+    if (p.base64) {
+      var cpyBtn = document.createElement('button')
+      cpyBtn.type = 'button'; cpyBtn.className = 'history-quick-copy-btn'
+      cpyBtn.textContent = '复制'
+      cpyBtn.title = '直接复制转换结果'
+      ;(function (b64) {
+        cpyBtn.addEventListener('click', function (e) {
+          e.stopPropagation()
+          copyText(getFormattedOutput(b64, currentFormat))
+        })
+      })(p.base64)
+      btns.appendChild(cpyBtn)
+    }
   })
 
   info.appendChild(top); info.appendChild(btns)
