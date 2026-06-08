@@ -24,7 +24,7 @@
 
     if (template.indexOf(svg) === 0) {
       var str = template.replace(new RegExp(svg.replace(/\+/, '\\+')), '')
-      str = str.replace(/'/g, '"') 
+      str = str.replace(/'/g, '"')
       return {
         data: decodeURIComponent(str),
         input: template
@@ -35,11 +35,8 @@
 
     var data = encodeURIComponent(template)
 
-    // 处理空格
     data = data.replace(new RegExp(space, 'g'), ' ')
-    // 处理引号
     data = data.replace(new RegExp(quotes, 'g'), option.doubleQuote ? '"' : "'")
-    // 处理等号
     data = data.replace(new RegExp(equal, 'g'), '=')
 
     return svg + data
